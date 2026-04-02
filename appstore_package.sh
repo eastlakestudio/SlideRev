@@ -67,7 +67,18 @@ fi
 # Copy Resources
 if [ -f "AppIcon.icns" ]; then cp "AppIcon.icns" "${APP_BUNDLE}/Contents/Resources/"; fi
 if [ -d "PPTXTemplate" ]; then cp -R "PPTXTemplate" "${APP_BUNDLE}/Contents/Resources/"; fi
-if [ -d "temp_coremlama/LaMa.mlmodelc" ]; then cp -R "temp_coremlama/LaMa.mlmodelc" "${APP_BUNDLE}/Contents/Resources/"; fi
+# 🚀 v45.0: Automatic Model Check
+if [ ! -d "3rd/coremlama/LaMa.mlmodelc" ]; then
+    echo "🧠 Missing AI Model. Dynamic downloading and preparing..."
+    ./prepare_lama_model.sh
+fi
+
+if [ -d "3rd/coremlama/LaMa.mlmodelc" ]; then
+    cp -R "3rd/coremlama/LaMa.mlmodelc" "${APP_BUNDLE}/Contents/Resources/"
+    echo "🧠 AI Model 'LaMa.mlmodelc' bundled successfully."
+else
+    echo "⚠️ WARNING: 'LaMa.mlmodelc' not found in 3rd/coremlama/. Inpainting might be disabled."
+fi
 
 # 4. Deep Signing with Timestamp
 echo "🔐 [5/5] Deep Signing with Apple Distribution certificate..."

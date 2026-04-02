@@ -7,7 +7,8 @@ SlideRev v*.app/
 build_app/
 
 # Large ML Models & Environments
-temp_coremlama/
+# 3rd/ Dependency Tools (Dynamically Downloaded)
+3rd/
 temp_slides/
 venv/
 .Python
@@ -38,3 +39,4 @@ poc_output.txt
 debug_pres.xml
 debug_rels.xml
 test_origin_editable.pdfStatus:
+appstore/slidere.md

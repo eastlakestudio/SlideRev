@@ -74,11 +74,17 @@ else
     exit 1
 fi
 
-if [ -d "temp_coremlama/LaMa.mlmodelc" ]; then
-    cp -R "temp_coremlama/LaMa.mlmodelc" "${APP_BUNDLE}/Contents/Resources/"
+# 🚀 v45.0: Automatic Model Check
+if [ ! -d "3rd/coremlama/LaMa.mlmodelc" ]; then
+    echo "🧠 Missing AI Model. Dynamic downloading and preparing..."
+    ./prepare_lama_model.sh
+fi
+
+if [ -d "3rd/coremlama/LaMa.mlmodelc" ]; then
+    cp -R "3rd/coremlama/LaMa.mlmodelc" "${APP_BUNDLE}/Contents/Resources/"
     echo "🧠 AI Model 'LaMa.mlmodelc' bundled successfully."
 else
-    echo "⚠️ WARNING: 'LaMa.mlmodelc' not found in temp_coremlama/. Inpainting might be disabled."
+    echo "⚠️ WARNING: 'LaMa.mlmodelc' not found in 3rd/coremlama/. Inpainting might be disabled."
 fi
 
 # 9. Code Signing (Ad-hoc with Entitlements)

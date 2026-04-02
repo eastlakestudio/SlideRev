@@ -17,9 +17,9 @@ struct SlideReverseApp: App {
     var body: some Scene {
         WindowGroup {
             RefinementView()
-                .frame(minWidth: 1200, minHeight: 800)
+                .frame(minWidth: 1280, minHeight: 800)
         }
         .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize) // 🚀 This enforces the frame as the fixed/min size effectively
+        .windowResizability(.contentSize)
     }
 }

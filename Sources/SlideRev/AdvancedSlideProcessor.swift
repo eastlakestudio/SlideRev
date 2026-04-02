@@ -226,7 +226,7 @@ class AdvancedSlideProcessor: ObservableObject {
     }
     
     // ML/AI Inpainter for watermark removal
-    static let defaultOCRThreshold: Float = 0.15
+    static let defaultOCRThreshold: Float = 0.50
     @Published var ocrConfidenceThreshold: Float = defaultOCRThreshold
     /// 🚀 批量处理标志：true 时 processPage 不更新 UI，只写缓存
     var isBatchProcessing: Bool = false
@@ -239,7 +239,7 @@ class AdvancedSlideProcessor: ObservableObject {
         if let bundleURL = Bundle.main.url(forResource: "LaMa", withExtension: "mlmodelc") {
             return NeuralInpainter(modelURL: bundleURL)
         }
-        let devPath = "temp_coremlama/LaMa.mlmodelc"
+        let devPath = "3rd/coremlama/LaMa.mlmodelc"
         return NeuralInpainter(modelURL: URL(fileURLWithPath: devPath))
     }()
     private var baseCGImage: CGImage?  // 当前頁的 CGImage
@@ -551,18 +551,8 @@ class AdvancedSlideProcessor: ObservableObject {
                 let normalizedRect = CGRect(x: visionRect.origin.x, y: 1.0 - visionRect.origin.y - visionRect.size.height, width: visionRect.size.width, height: visionRect.size.height * 1.05)
                 let pixelRect = CGRect(x: normalizedRect.origin.x * pixelSize.width, y: normalizedRect.origin.y * pixelSize.height, width: normalizedRect.size.width * pixelSize.width, height: normalizedRect.size.height * pixelSize.height)
                 
-                // 🚀 V0.9.9.13: Granular Character Extraction
-                var charRects: [CGRect] = []
-                for i in 0..<top.string.count {
-                    let range = top.string.index(top.string.startIndex, offsetBy: i)..<top.string.index(top.string.startIndex, offsetBy: i+1)
-                    if let charBox = try? top.boundingBox(for: range) {
-                        let cRect = charBox.boundingBox
-                        let normChar = CGRect(x: cRect.origin.x, y: 1.0 - cRect.origin.y - cRect.size.height, width: cRect.size.width, height: cRect.size.height)
-                        let pixChar = CGRect(x: normChar.origin.x * pixelSize.width, y: normChar.origin.y * pixelSize.height, width: normChar.size.width * pixelSize.width, height: normChar.size.height * pixelSize.height)
-                        charRects.append(pixChar)
-                    }
-                }
-                if charRects.isEmpty { charRects = [pixelRect] }
+                // 🚀 V0.9.9.25: Smart Rect Extraction (Word-level for Alpha, Char-level for CJK)
+                let charRects = self.extractEraseRects(from: top, fullBox: obs.boundingBox, pixelSize: pixelSize)
                 
                 let fontSize = self.calculateFittingFontSize(text: top.string, fontName: "Helvetica", targetWidth: pixelRect.width, targetHeight: pixelRect.height)
                 let itemColor = self.samplePrimaryColor(cgImage: cgImage, rect: pixelRect, imageHeight: pixelSize.height)
@@ -605,15 +595,32 @@ class AdvancedSlideProcessor: ObservableObject {
             }
         }
         
-        if let maskCG = ctx.makeImage(), let res = inpainter.inpaint(image: base, mask: maskCG) {
-            DispatchQueue.main.async {
-                // 🚀 V0.9.8.32: Use explicit re-assignment to ensure Dictionary/Struct Setter is triggered
-                if var page = self.pages[index] {
-                    page.refined.background = NSImage(cgImage: res, size: pixelSize)
-                    page.refined.isRefined = true
-                    self.pages[index] = page
+        
+        if let maskCG = ctx.makeImage() {
+            // 🚀 V0.9.9.32: 质量优化 - 遮罩羽化 (Mask Feathering)
+            // 对遮罩生成 3.0 半径的高斯模糊，使背景修复过渡更自然，消除边缘噪点。
+            let ciMask = CIImage(cgImage: maskCG)
+            let blurFilter = CIFilter(name: "CIGaussianBlur")
+            blurFilter?.setValue(ciMask, forKey: kCIInputImageKey)
+            blurFilter?.setValue(3.0, forKey: kCIInputRadiusKey)
+            
+            var finalMask: CGImage? = maskCG
+            if let output = blurFilter?.outputImage,
+               let softMask = self.context.createCGImage(output, from: ciMask.extent) {
+                finalMask = softMask
+            }
+            
+            if let targetMask = finalMask, let res = inpainter.inpaint(image: base, mask: targetMask) {
+                DispatchQueue.main.async {
+                    if var page = self.pages[index] {
+                        page.refined.background = NSImage(cgImage: res, size: pixelSize)
+                        page.refined.isRefined = true
+                        self.pages[index] = page
+                    }
+                    completion(true)
                 }
-                completion(true)
+            } else {
+                completion(false)
             }
         } else {
             completion(false)
@@ -622,7 +629,7 @@ class AdvancedSlideProcessor: ObservableObject {
     
     private func performOCR(on cgImage: CGImage, pixelSize: CGSize, pageIndex: Int, completion: @escaping (Bool) -> Void) {
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        let threshold = self.ocrConfidenceThreshold
+        let threshold :Float = self.ocrConfidenceThreshold
         let ocrRequest = VNRecognizeTextRequest { [weak self] (request, error) in
             if let _ = error {
                 completion(false)
@@ -647,7 +654,10 @@ class AdvancedSlideProcessor: ObservableObject {
                 let fontSize = self.calculateFittingFontSize(text: top.string, fontName: "Helvetica", targetWidth: pixelRect.width, targetHeight: pixelRect.height)
                 let itemColor = self.samplePrimaryColor(cgImage: cgImage, rect: pixelRect, imageHeight: pixelSize.height)
                 
-                items.append(RecognizedItem(text: top.string, editedText: top.string, rect: normalizedRect, pixelRect: pixelRect, charRects: [pixelRect], fontSize: fontSize, color: itemColor, isBold: false))
+                // 🚀 V0.9.9.25: Sync word-level erasure to UI OCR as well
+                let charRects = self.extractEraseRects(from: top, fullBox: obs.boundingBox, pixelSize: pixelSize)
+                
+                items.append(RecognizedItem(text: top.string, editedText: top.string, rect: normalizedRect, pixelRect: pixelRect, charRects: charRects, fontSize: fontSize, color: itemColor, isBold: false))
             }
             print("🔠 [OCR] 识别完成: \(items.count) 项（阈值=\(String(format:"%.2f", threshold))）")
             DispatchQueue.main.async { 
@@ -673,10 +683,59 @@ class AdvancedSlideProcessor: ObservableObject {
         }
         
         ocrRequest.recognitionLevel = VNRequestTextRecognitionLevel.accurate
-        ocrRequest.recognitionLanguages = ["zh-Hans", "en-US"]
+        
+        ocrRequest.automaticallyDetectsLanguage = true
+        ocrRequest.usesLanguageCorrection = true
+        //ocrRequest.recognitionLanguages = ["zh-Hans", "en-US"]
         try? handler.perform([ocrRequest])
     }
     
+    // MARK: - Helpers for OCR and Inpainting
+    private func containsCJK(_ text: String) -> Bool {
+        return text.unicodeScalars.contains { scalar in
+            (scalar.value >= 0x4E00 && scalar.value <= 0x9FFF) || // Unified
+            (scalar.value >= 0x3400 && scalar.value <= 0x4DBF) || // Ext A
+            (scalar.value >= 0x3040 && scalar.value <= 0x309F) || // Hiragana
+            (scalar.value >= 0x30A0 && scalar.value <= 0x30FF) || // Katakana
+            (scalar.value >= 0xAC00 && scalar.value <= 0xD7AF)    // Hangul
+        }
+    }
+    
+    private func extractEraseRects(from top: VNRecognizedText, fullBox: CGRect, pixelSize: CGSize) -> [CGRect] {
+        let text = top.string
+        let isCJK = containsCJK(text)
+        var rects: [CGRect] = []
+        
+        if isCJK {
+            // CJK: Character-level extraction
+            for i in 0..<text.count {
+                let range = text.index(text.startIndex, offsetBy: i)..<text.index(text.startIndex, offsetBy: i+1)
+                if let box = try? top.boundingBox(for: range) {
+                    let vRect = box.boundingBox
+                    let norm = CGRect(x: vRect.origin.x, y: 1.0 - vRect.origin.y - vRect.size.height, width: vRect.size.width, height: vRect.size.height)
+                    rects.append(CGRect(x: norm.origin.x * pixelSize.width, y: norm.origin.y * pixelSize.height, width: norm.size.width * pixelSize.width, height: norm.size.height * pixelSize.height))
+                }
+            }
+        } else {
+            // Alphabetic: Full String Range (🚀 Fixed: Including symbols and punctuation)
+            // 针对英文直接获取全文字串范围的包围盒，确保括号 ()、分号 ; 等符号被完整覆盖。
+            if let box = try? top.boundingBox(for: text.startIndex..<text.endIndex) {
+                let union = box.boundingBox
+                let norm = CGRect(x: union.origin.x, y: 1.0 - union.origin.y - union.size.height, width: union.size.width, height: union.size.height)
+                // 🚀 V0.9.9.32: 加固 Padding 参数，既能遮住笔画，又能防止背景溢出
+                let paddedNorm = norm.insetBy(dx: -norm.width * 0.012, dy: -norm.height * 0.035)
+                rects.append(CGRect(x: paddedNorm.origin.x * pixelSize.width, y: paddedNorm.origin.y * pixelSize.height, width: paddedNorm.size.width * pixelSize.width, height: paddedNorm.size.height * pixelSize.height))
+            }
+        }
+        
+        if rects.isEmpty {
+            let vRect = fullBox
+            let norm = CGRect(x: vRect.origin.x, y: 1.0 - vRect.origin.y - vRect.size.height, width: vRect.size.width, height: vRect.size.height * 1.05)
+            rects = [CGRect(x: norm.origin.x * pixelSize.width, y: norm.origin.y * pixelSize.height, width: norm.size.width * pixelSize.width, height: norm.size.height * pixelSize.height)]
+        }
+        return rects
+    }
+
     private func samplePrimaryColor(cgImage: CGImage, rect: CGRect, imageHeight: CGFloat) -> CGColor {
         // 🚀 核心修復：確保與 Mask 相同的 Y 軸翻轉邏輯
         let flippedY = imageHeight - rect.origin.y - rect.size.height

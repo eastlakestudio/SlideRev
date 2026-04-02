@@ -20,7 +20,7 @@ class NeuralInpainterTests {
     // 1. 验证模型加载
     func testInitialization() {
         print("   - 测试 1: 模型加载...")
-        let modelURL = URL(fileURLWithPath: "temp_coremlama/LaMa.mlmodelc")
+        let modelURL = URL(fileURLWithPath: "3rd/coremlama/LaMa.mlmodelc")
         _ = NeuralInpainter(modelURL: modelURL)
     }
     

@@ -720,37 +720,45 @@ struct RefinementView: View {
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "target").font(.caption2).foregroundColor(.secondary)
-                    Slider(value: $processor.ocrConfidenceThreshold, in: 0.01...0.8)
+                    Slider(value: $processor.ocrConfidenceThreshold, in: 0.30...0.95)
                         .frame(width: 70).controlSize(.mini)
                     Text(String(format: "%.2f", processor.ocrConfidenceThreshold))
                         .font(.system(.caption2, design: .monospaced)).foregroundColor(.secondary).frame(width: 32)
                     
-                    Button(action: { processor.ocrConfidenceThreshold = 0.15 }) {
+                    Button(action: { processor.ocrConfidenceThreshold = 0.50 }) {
                         Image(systemName: "arrow.counterclockwise.circle").font(.caption2)
                     }
                     .buttonStyle(.plain).foregroundColor(.secondary)
-                    .help("Reset OCR Threshold to default (0.15)")
+                    .help("Reset OCR Threshold to default (0.50)")
                 }
-                .help("OCR Confidence Threshold: Lower values catch more text but may include noise.")
+                .help("OCR Confidence Threshold: Lower values catch more text, higher values are stricter.")
                 
                 Divider().frame(height: 16)
                 
                 HStack(spacing: 8) {
-                    Button(action: prevPage) { Image(systemName: "chevron.left") }.disabled(currentPageIndex == 0)
-                    Text("\(currentPageIndex + 1) / \(max(1, totalPageCount))").font(.system(.caption, design: .monospaced).bold())
-                    Button(action: nextPage) { Image(systemName: "chevron.right") }.disabled(currentPageIndex >= totalPageCount - 1)
+                    Button(action: prevPage) { Image(systemName: "chevron.left") }
+                        .disabled(currentPageIndex == 0)
+                        .help("Previous Page")
+                    Text("\(currentPageIndex + 1) / \(max(1, totalPageCount))")
+                        .font(.system(.caption, design: .monospaced).bold())
+                    Button(action: nextPage) { Image(systemName: "chevron.right") }
+                        .disabled(currentPageIndex >= totalPageCount - 1)
+                        .help("Next Page")
                 }.padding(.horizontal, 8).padding(.vertical, 4).background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.1)))
                 
                 HStack(spacing: 4) {
                     Button(action: { zoomScale = max(0.2, zoomScale - 0.2) }) { Image(systemName: "minus.magnifyingglass") }
+                        .help("Zoom Out")
                     Slider(value: $zoomScale, in: 0.1...3.0).frame(width: 80).controlSize(.small)
+                        .help("Zoom Control")
                     Button(action: { zoomScale = min(3.0, zoomScale + 0.2) }) { Image(systemName: "plus.magnifyingglass") }
+                        .help("Zoom In")
                     
                     Button(action: { withAnimation { autoFit() } }) {
                         Text("\(Int(zoomScale * 100))%")
                             .font(.system(.caption, design: .monospaced).bold())
                             .frame(width: 45)
-                    }.buttonStyle(.plain).help("Reset Zoom / Auto Fit")
+                    }.buttonStyle(.plain).help("Auto Fit / Reset Zoom")
                 }
             }
         }.padding(.horizontal, 20).frame(height: 32).background(Color(NSColor.windowBackgroundColor))
