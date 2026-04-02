@@ -1,0 +1,40 @@
+# Build artifacts
+.build/
+build_archive/
+dist_archive/
+SlideRev_v*.app/
+SlideRev v*.app/
+build_app/
+
+# Large ML Models & Environments
+temp_coremlama/
+temp_slides/
+venv/
+.Python
+env/
+pip-log.txt
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Python cache
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Test files
+test_files/
+pptx_work/
+Metadata_Cover_Result.json
+PoC_Step1_OCR_Result.json
+poc_output.txt
+debug_pres.xml
+debug_rels.xml
+test_origin_editable.pdfStatus:

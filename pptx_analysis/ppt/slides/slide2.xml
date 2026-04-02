@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld name="Slide 2"><p:bg><p:bgPr><a:blipFill dpi="0" rotWithShape="1"><a:blip r:embed="rId1"><a:lum/></a:blip><a:srcRect/><a:stretch><a:fillRect/></a:stretch></a:blipFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvPr></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp>
+    <p:nvSpPr><p:cNvPr id="1000" name="Span 0"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="25398" y="532014"/><a:ext cx="203188" cy="202672"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="D4B79F"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1356">
+                    <a:solidFill><a:srgbClr val="2B4860"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>◎</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1001" name="Span 1"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="25398" y="988027"/><a:ext cx="203188" cy="202672"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="CDA991"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1356">
+                    <a:solidFill><a:srgbClr val="32566E"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>◎</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1002" name="Span 2"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="838151" y="480750"/><a:ext cx="9549844" cy="584696"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="FDE8C8"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="3382">
+                    <a:solidFill><a:srgbClr val="021737"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>核心理念：克制的平台，才是致命危险前的最优解</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1003" name="Span 3"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="873709" y="1091433"/><a:ext cx="5242255" cy="437439"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="FCF1E0"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="2552">
+                    <a:solidFill><a:srgbClr val="030E1F"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>四大建设原则构筑全新一代数字底座</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1004" name="Span 4"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="6629014" y="2126562"/><a:ext cx="4241553" cy="558844"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="F0C2A2"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="3740">
+                    <a:solidFill><a:srgbClr val="0F3D5D"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>全新一代数字底座</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1005" name="Span 5"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="2844634" y="5470158"/><a:ext cx="1523911" cy="433108"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="FEDDC4"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="2898">
+                    <a:solidFill><a:srgbClr val="01223B"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>轻量融合</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1006" name="Span 6"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="2869445" y="5975873"/><a:ext cx="1525085" cy="309921"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="F4DFC7"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1980">
+                    <a:solidFill><a:srgbClr val="0B2038"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>网关级协议适</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1007" name="Span 7"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="2870033" y="6332044"/><a:ext cx="1498512" cy="255533"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="F7E3D4"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1667">
+                    <a:solidFill><a:srgbClr val="081C2B"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>配，绝不越界重</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1008" name="Span 8"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="2844634" y="6612180"/><a:ext cx="1193730" cy="304559"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="CBBDB2"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1648">
+                    <a:solidFill><a:srgbClr val="34424D"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>造庇层GIS。</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1009" name="Span 9"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="6296875" y="5465268"/><a:ext cx="1502429" cy="444440"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="F9C5A4"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="2926">
+                    <a:solidFill><a:srgbClr val="063A5B"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>实战为王</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1010" name="Span 10"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="6323815" y="6002030"/><a:ext cx="1423151" cy="282941"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="F8D7B4"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1764">
+                    <a:solidFill><a:srgbClr val="07284B"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>聚焦“1-3-5&quot;</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1011" name="Span 11"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="6324232" y="6306057"/><a:ext cx="1473114" cy="307506"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="D9B699"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1912">
+                    <a:solidFill><a:srgbClr val="264966"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>应急铁律，平</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1012" name="Span 12"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="6321176" y="6573878"/><a:ext cx="1250638" cy="329944"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="655543"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1623">
+                    <a:solidFill><a:srgbClr val="9AAABC"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>战无缱切换。</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1013" name="Span 13"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="9648825" y="5437424"/><a:ext cx="1529139" cy="449460"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="CAE5CC"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="2978">
+                    <a:solidFill><a:srgbClr val="351A33"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>敬畏底线</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1014" name="Span 14"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="9676538" y="5977358"/><a:ext cx="1499110" cy="306951"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="D1DDC5"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1946">
+                    <a:solidFill><a:srgbClr val="2E223A"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>消防控制权绝</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1015" name="Span 15"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="9524446" y="6306057"/><a:ext cx="1650904" cy="307506"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="7E8A7D"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1588">
+                    <a:solidFill><a:srgbClr val="817582"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>。对物理隔高，IT</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1016" name="Span 16"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="9676177" y="6609035"/><a:ext cx="1322042" cy="284964"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="546650"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1690">
+                    <a:solidFill><a:srgbClr val="AB99AF"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>永不逾越OT。</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1017" name="Span 17"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="13283427" y="5470158"/><a:ext cx="1193730" cy="407335"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="C85241"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="2726">
+                    <a:solidFill><a:srgbClr val="37ADBE"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>务实AI</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1018" name="Span 18"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="13131036" y="6002881"/><a:ext cx="1523911" cy="305290"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="A39383"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1696">
+                    <a:solidFill><a:srgbClr val="5C6C7C"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>严守标书场景，</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1019" name="Span 19"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="13105202" y="6280612"/><a:ext cx="1550181" cy="308460"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="F2DAC2"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="2012">
+                    <a:solidFill><a:srgbClr val="0D253D"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>摒弃高淏揠率</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1020" name="Span 20"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="13131036" y="6586846"/><a:ext cx="838151" cy="329893"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="635347"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1632">
+                    <a:solidFill><a:srgbClr val="9CACB8"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>伪需求。</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1021" name="Span 21"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="16128062" y="9474925"/><a:ext cx="1244527" cy="153072"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="2E2621"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1024">
+                    <a:solidFill><a:srgbClr val="D1D9DE"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>A NotebookLM</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>

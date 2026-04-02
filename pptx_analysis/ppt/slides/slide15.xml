@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld name="Slide 15"><p:bg><p:bgPr><a:blipFill dpi="0" rotWithShape="1"><a:blip r:embed="rId1"><a:lum/></a:blip><a:srcRect/><a:stretch><a:fillRect/></a:stretch></a:blipFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvPr></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp>
+    <p:nvSpPr><p:cNvPr id="1000" name="Span 0"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="4419343" y="7473537"/><a:ext cx="8533903" cy="608264"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="FCDAAD"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="4071">
+                    <a:solidFill><a:srgbClr val="032552"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>打造“平战结合”的统一指挥大脑</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1001" name="Span 1"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="4012966" y="8181416"/><a:ext cx="9372055" cy="508154"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="FDE1BA"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="3401">
+                    <a:solidFill><a:srgbClr val="021E45"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>世界级炼化管控规模的数字安全筑基</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp><p:sp>
+    <p:nvSpPr><p:cNvPr id="1002" name="Span 2"/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+        <a:xfrm><a:off x="16128062" y="9474925"/><a:ext cx="1244527" cy="153072"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:solidFill><a:srgbClr val="39342D"/></a:solidFill>
+    </p:spPr>
+    <p:txBody>
+        <a:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr" wrap="none">
+            <a:normAutofit fontScale="95000" lnSpcReduction="10000"/>
+        </a:bodyPr>
+        <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+                <a:rPr lang="zh-CN" sz="1024">
+                    <a:solidFill><a:srgbClr val="C6CBD2"/></a:solidFill>
+                    <a:latin typeface="PingFang SC"/>
+                    <a:ea typeface="PingFang SC"/>
+                </a:rPr>
+                <a:t>A NotebookLM</a:t>
+            </a:r>
+        </a:p>
+    </p:txBody>
+</p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>
