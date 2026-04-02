@@ -10,7 +10,7 @@ BUILD_DIR="build_app"
 DIST_DIR="dist"
 APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
 INFO_PLIST="Info.plist"
-ENTITLEMENTS="SlideRev.entitlements"
+ENTITLEMENTS="SlideRev.local.entitlements"
 
 # Final Placement: pdf2pptx/SlideRev_v0.9.8.app
 FINAL_PRODUCT="SlideRev_v${VERSION}.app"

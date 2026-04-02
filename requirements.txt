@@ -1,8 +1,0 @@
-PySide6
-paddleocr
-paddlepaddle
-pymupdf
-opencv-python
-python-pptx
-pyinstaller
-numpy
