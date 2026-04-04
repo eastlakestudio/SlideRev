@@ -8,7 +8,8 @@ class PPTXExporter {
     // Physical Constants
     private let EMU_PER_PT: Double = 12700
     
-    func export(pages: [Int: AdvancedSlideProcessor.PageState], 
+    func export(processor: AdvancedSlideProcessor,
+                pages: [Int: AdvancedSlideProcessor.PageState], 
                 to targetURL: URL, 
                 progress: ((Int, Int) -> Void)? = nil, 
                 completion: @escaping (Bool, String) -> Void) {
@@ -69,10 +70,13 @@ class PPTXExporter {
                 // Image Injection
                 let imgName = "image_p\(slideIndex).png"
                 let imgPath = mediaDir.appendingPathComponent(imgName)
-                if let bgImage = page.refined.background ?? page.raw.originalImage,
-                   let tiff = bgImage.tiffRepresentation,
+                
+                // 🚀 v58.0: On-demand hydration (NOW SYNCHRONOUS & CACHE-AWARE)
+                let result = processor.getHydratedImages(for: pageIndex)
+                if let bgCG = result.refined,
+                   let tiff = NSImage(cgImage: bgCG, size: page.visualSize).tiffRepresentation,
                    let bitmap = NSBitmapImageRep(data: tiff),
-                   let png = bitmap.representation(using: .png, properties: [:]) {
+                   let png = bitmap.representation(using: NSBitmapImageRep.FileType.png, properties: [:]) {
                     try png.write(to: imgPath)
                 }
                 
@@ -175,7 +179,8 @@ class PPTXExporter {
         let ph = page.raw.pdfSize.height
         
         for (i, item) in page.refined.textLayers.enumerated() {
-            if !item.isErased { continue }
+            // 🚀 V58.8: EXPORT FILTER - Only export text boxes that are meant to be visible
+            if !item.isErased || !item.isTextVisible { continue }
             let text = escapeXML(item.editedText.isEmpty ? item.text : item.editedText)
             
             let xPt = offX + (item.rect.origin.x * pw * fitScale)
@@ -209,7 +214,7 @@ class PPTXExporter {
                     <a:p>
                         <a:pPr algn="ctr" rtl="0"/>
                         <a:r>
-                            <a:rPr lang="zh-CN" sz="\(sz)" b="\(item.isBold ? "1" : "0")">
+                            <a:rPr lang="en-US" sz="\(sz)" b="\(item.isBold ? "1" : "0")">
                                 <a:solidFill><a:srgbClr val="\(hex)"/></a:solidFill>
                                 <a:latin typeface="\(item.fontName)"/>
                                 <a:ea typeface="\(item.fontName)"/>

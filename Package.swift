@@ -19,6 +19,12 @@ let package = Package(
                 "ZIPFoundation"
             ],
             path: "Sources/SlideRev"
+        ),
+        .testTarget(
+            name: "SlideRevTests",
+            dependencies: ["SlideRev"],
+            path: "Tests",
+            exclude: ["test_core.py"]
         )
     ]
 )

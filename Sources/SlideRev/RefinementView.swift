@@ -6,7 +6,6 @@ struct RefinementView: View {
     @StateObject var processor = AdvancedSlideProcessor()
     @State private var zoomScale: CGFloat = 0.8
     @State private var selectedItemId: UUID?
-    @State private var viewMode: ViewMode = .edit
     
     // PDF & File States
     @State private var pdfDocument: PDFDocument?
@@ -22,9 +21,7 @@ struct RefinementView: View {
     @State private var registryEntry: RefinementRegistry.Entry? = nil
     @State private var hoverItemId: UUID? = nil
     @State private var isExporting: Bool = false
-    @State private var isBatchRefining: Bool = false
     @State private var isExportingPPTX: Bool = false
-    @State private var batchProgress: (current: Int, total: Int) = (0, 0)
     
     // Watermark Removal
     @State private var selectedWatermark: String = "A NotebookLM"
@@ -52,19 +49,20 @@ struct RefinementView: View {
     
     // 🚀 V30.0: PRE-WARM MODE (Optimizing UI Flow)
     @State private var isPreWarming: Bool = false
+    @State private var isHoveringDashboard: Bool = false
 
     enum ViewMode: String, CaseIterable {
-        case original = "Original", edit = "Editable"
+        case original = "Original"
+        case editable = "Editable"
     }
+    
+    @State private var viewMode: ViewMode = .editable
+    @State private var workspaceSize: CGSize = .zero // 🚀 V39.9: Precise workspace tracking
 
     var body: some View {
         ZStack {
             if originalPath == nil {
                 startDashboard
-            } else if isPreWarming {
-                // 🚀 V30.0: Optimize Screen before Editor
-                documentPreWarmView
-                    .transition(.opacity)
             } else {
                 VStack(spacing: 0) {
                     masterRibbon
@@ -73,10 +71,14 @@ struct RefinementView: View {
                     Divider()
                     statusBar
                 }
-                .onTapGesture(count: 2) { maximizeWindow() } // 🚀 V0.9.6.1: Double tap to maximize
             }
             
-            if isExporting || isBatchRefining || isExportingPPTX {
+            // 🚀 V56.2: GLOBAL MODAL PRE-WARM
+            if isPreWarming && originalPath != nil {
+                globalPreWarmModal
+            }
+            
+            if isExporting || processor.isBatchProcessing || isExportingPPTX {
                 exportingOverlay
             }
 
@@ -130,10 +132,8 @@ struct RefinementView: View {
         } message: {
             Text("You have unsaved changes. Would you like to save them before leaving?")
         }
-        .onChange(of: processor.preWarmedCount) { oldValue, newValue in
-            // 🚀 V30.0: Auto-transition when pre-warming is complete (up to 40 pages)
-            let targetCount = min(40, totalPageCount)
-            if newValue >= targetCount && isPreWarming {
+        .onChange(of: processor.isDocumentReady) { oldValue, newValue in
+            if newValue {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.825)) {
                     isPreWarming = false
                 }
@@ -148,6 +148,17 @@ struct RefinementView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(errorMessage)
+        }
+        .onChange(of: processor.originalImage) { _, image in
+            if image != nil {
+                withAnimation { autoFit() }
+            }
+        }
+        // 🚀 V39.9: Watch for workspace size changes to ensure Auto-Fit
+        .onChange(of: workspaceSize) { _, _ in
+            if processor.originalImage != nil {
+                withAnimation { autoFit() }
+            }
         }
     }
     
@@ -172,18 +183,26 @@ struct RefinementView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(isExportingPPTX ? "Exporting..." : "Visual Refinement")
+                            Text(isExporting ? "Exporting PDF..." : (isExportingPPTX ? "Exporting PPTX..." : "Visual Refinement"))
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
                             
-                            Text("Page \(batchProgress.current) / \(batchProgress.total)")
+                            if let name = processor.currentFileName {
+                                Text(name)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.accentColor.opacity(0.7))
+                                    .lineLimit(1)
+                                    .frame(maxWidth: 140, alignment: .leading)
+                            }
+
+                            Text("Page \(processor.batchProgress.current) / \(processor.batchProgress.total)")
                                 .font(.system(size: 11))
                                 .foregroundColor(.secondary)
                         }
                     }
                     
-                    if isBatchRefining {
+                    if processor.isBatchProcessing {
                         VStack(spacing: 4) {
-                            ProgressView(value: Double(batchProgress.current), total: Double(max(1, batchProgress.total)))
+                            ProgressView(value: Double(processor.batchProgress.current), total: Double(max(1, processor.batchProgress.total)))
                                 .progressViewStyle(.linear)
                                 .tint(.accentColor)
                                 .frame(width: 140)
@@ -272,37 +291,76 @@ struct RefinementView: View {
             }
             
             Button(action: selectPDF) {
-                VStack(spacing: 30) {
-                    GraphicProcessView() 
-                        .foregroundColor(.primary) // Prevent color override from button
-                        .id(UUID()) // Ensure animation starts correctly
+                ZStack {
+                    // 🚀 V37.11: Fix: Removing redundant background graphic to resolve duplication
                     
-                    VStack(spacing: 10) {
-                        Text("Import PDF, Images or NotebookLM Citations")
-                            .font(.title3.bold())
-                        Text("Click to transform your documents and AI snapshots into editable PPTX")
-                            .font(.subheadline).foregroundColor(.secondary)
-                        Text("Supported: PDF, PNG, JPG, JPEG, HEIC, TIFF")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .opacity(0.5)
+                    VStack(spacing: 0) {
+                        // 🚀 V37.10: Logo graphic now firmly at the top
+                        GraphicProcessView() 
+                            .opacity(isHoveringDashboard ? 0.4 : 0.6)
+                            .scaleEffect(0.9)
+                            .padding(.top, 40)
+                        
+                        Spacer()
+                        
+                        // 🚀 V37.10: Informational Text now strictly above the button
+                        VStack(spacing: 12) {
+                            Text("Import PDF, Images or NotebookLM Citations")
+                                .font(.system(size: 26, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                            
+                            HStack(spacing: 6) {
+                                Image(systemName: "hand.tap.fill")
+                                Text("Click to transform your documents into editable PPTX")
+                            }
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            
+                            Text("Supported: PDF, PNG, JPG, JPEG, HEIC, TIFF")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                                .background(Capsule().fill(Color.accentColor.opacity(0.1)))
+                                .opacity(0.6)
+                        }
+                        .padding(.bottom, 30)
+                        
+                        // 🚀 V37.10: Centered Plus Icon at the BOTTOM for a modern landing vibe
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 80, weight: .thin))
+                            .foregroundColor(.accentColor)
+                            .background(Circle().fill(Color(NSColor.windowBackgroundColor)))
+                            .shadow(color: .accentColor.opacity(isHoveringDashboard ? 0.3 : 0.1), radius: isHoveringDashboard ? 15 : 5)
+                            .scaleEffect(isHoveringDashboard ? 1.1 : 1.0)
+                            .padding(.bottom, 30)
                     }
                 }
-                .frame(width: 600, height: 340)
+                .frame(width: 640, height: 440)
                 .background(
                     ZStack {
-                        RoundedRectangle(cornerRadius: 24).fill(Color.accentColor.opacity(0.04))
-                        RoundedRectangle(cornerRadius: 24).strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [8]))
+                        RoundedRectangle(cornerRadius: 32)
+                            .fill(isHoveringDashboard ? Color.accentColor.opacity(0.06) : Color.accentColor.opacity(0.03))
+                        RoundedRectangle(cornerRadius: 32)
+                            .strokeBorder(isHoveringDashboard ? Color.accentColor : Color.accentColor.opacity(0.2), 
+                                         style: StrokeStyle(lineWidth: isHoveringDashboard ? 2.5 : 1.5, dash: [10, 5]))
                     }
                 )
-                .foregroundColor(.accentColor).contentShape(Rectangle())
+                .scaleEffect(isHoveringDashboard ? 1.02 : 1.0)
+                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isHoveringDashboard)
             }
             .buttonStyle(.plain)
+            .onHover { inside in
+                isHoveringDashboard = inside
+                if inside {
+                    NSCursor.pointingHand.set()
+                } else {
+                    NSCursor.arrow.set()
+                }
+            }
             
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(NSColor.windowBackgroundColor)) 
-        .onTapGesture(count: 2) { maximizeWindow() } 
     }
 
     struct GraphicProcessView: View {
@@ -348,23 +406,22 @@ struct RefinementView: View {
         }
     }
 
-    private func maximizeWindow() {
-        if let window = NSApp.mainWindow { window.setIsZoomed(!window.isZoomed) }
-    }
+    
     
     // MARK: - 2. Workspace
     var workspaceView: some View {
         GeometryReader { geo in
+            Color.clear
+                .onAppear { workspaceSize = geo.size }
+                .onChange(of: geo.size) { _, newValue in workspaceSize = newValue }
+            
             ScrollView([.horizontal, .vertical]) {
                 ZStack {
-                    if let image = (viewMode == .edit ? (processor.inpaintedImage ?? processor.originalImage) : processor.originalImage) {
+                    if let image = (viewMode == .original ? processor.originalImage : (processor.inpaintedImage ?? processor.originalImage)) {
                         imageWorkspaceContent(image: image, viewportSize: geo.size)
                     } else {
-                        // 🚀 V29.4: LOADING FALLBACK
-                        // Prevents 'White Screen' during background rendering or skeleton-hit latency
-                        refiningOverlay
-                            .frame(width: geo.size.width - 80, height: geo.size.height - 80)
-                            .cornerRadius(24)
+                        // Empty state or transition
+                        Color.clear
                     }
                 }
                 .padding(40)
@@ -383,35 +440,34 @@ struct RefinementView: View {
         ZStack {
             // 1. Base Layer: Images
             ZStack {
-                // Bottom: Original Image
-                if let original = processor.originalImage {
-                    Image(nsImage: original)
-                        .resizable().aspectRatio(contentMode: .fit)
-                        // 🚀 v37.6: Only hide original IF the inpainted background safely took over.
-                        // Prevents the "everything disappeared" blank screen bug.
-                        .opacity((viewMode == .edit && processor.inpaintedImage != nil) ? 0 : 1) 
-                }
-                
-                // Top: Inpainted Image
-                if viewMode == .edit, let inpainted = processor.inpaintedImage {
-                    if processor.isRefinementFinalized {
-                        // 🚀 Final State: Full clean background
+                if viewMode == .original {
+                    // 🚀 Mode: Original - Only show original image
+                    if let original = processor.originalImage {
+                        Image(nsImage: original)
+                            .resizable().aspectRatio(contentMode: .fit)
+                    }
+                } else {
+                    // 🚀 Mode: Editable - Optimized Layering (v42.0)
+                    // If we have an inpainted background, use it as the absolute base to prevent original content "leaking" through.
+                    if let inpainted = processor.inpaintedImage {
                         Image(nsImage: inpainted)
                             .resizable().aspectRatio(contentMode: .fit)
-                    } else {
-                        // ⚡ Animation State: Masked Reveal (Character-level)
-                        Image(nsImage: inpainted)
+                    } else if let original = processor.originalImage {
+                        // Fallback: Show original if background isn't ready yet
+                        Image(nsImage: original)
                             .resizable().aspectRatio(contentMode: .fit)
-                            .mask(ErasedItemsMask(items: processor.recognizedItems, imageSize: image.size))
                     }
                 }
             }
             .frame(width: iw, height: ih)
             
             // 2. Metadata Overlay (Text Boxes)
-            if viewMode == .edit {
+            // 🚀 V42.0: Decoupled condition. Always show interactive items in Editable mode 
+            // if we have OCR data, regardless of background finalized state.
+            if viewMode != .original && !processor.recognizedItems.isEmpty {
                 metadataOverlay(imageSize: image.size)
                     .allowsHitTesting(!isEraserMode)
+                    .transition(.opacity.animation(.easeInOut(duration: 0.25)))
             }
             
             // 3. 🚀 TOP-LEVEL ERASER TRACKING LAYER
@@ -438,7 +494,11 @@ struct RefinementView: View {
         .gesture(originPanGesture(isAllowed: isPanningAllowed)) 
         .onTapGesture { if !isEraserMode { selectedItemId = nil } }
         .onHover { inside in
-            if inside && viewMode == .original { NSCursor.openHand.set() }
+            if inside && viewMode == .original { 
+                NSCursor.openHand.set() 
+            } else {
+                NSCursor.arrow.set()
+            }
         }
         .onChange(of: zoomScale) { old, new in
             if !isPanningAllowed {
@@ -451,23 +511,103 @@ struct RefinementView: View {
     }
 
     @ViewBuilder
-    private var refiningOverlay: some View {
+    private var globalPreWarmModal: some View {
         ZStack {
+            // Background Layer: Darkened Material
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .overlay(Color.accentColor.opacity(0.05))
+                .overlay(Color.black.opacity(0.4))
+                .ignoresSafeArea()
             
-            VStack(spacing: 20) {
-                ScanningPageView()
-                    .frame(width: 80, height: 110)
-                    .scaleEffect(0.8)
+            VStack(spacing: 40) {
+                // 1. TITLE & BRANDING
+                VStack(spacing: 8) {
+                    Text("SlideRev")
+                        .font(.system(size: 32, weight: .black, design: .rounded))
+                    
+                    if let name = processor.currentFileName {
+                        Text(name)
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 12).padding(.vertical, 4)
+                            .background(Capsule().fill(Color.accentColor.opacity(0.1)))
+                    }
+
+                    Text("Perfecting your slides with AI...")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
                 
-                Text("AI Refining...")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(.accentColor)
+                // 2. THE CAROUSEL (Current Page Thumbnail)
+                ZStack {
+                    if let thumb = processor.currentlyPreWarmingImage {
+                        Image(nsImage: thumb)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 400, height: 300)
+                            .cornerRadius(12)
+                            .shadow(color: .accentColor.opacity(0.3), radius: 20)
+                            .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+                            .id("prewarm_\(processor.preWarmedCount)") // Force transition on page change
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 400, height: 300)
+                    }
+                    
+                    // 3. SCANNING LASER EFFECT
+                    ScanningLaserEffect()
+                        .frame(width: 400, height: 300)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                
+                // 4. PROGRESS DETAILS
+                VStack(spacing: 12) {
+                    HStack(alignment: .lastTextBaseline, spacing: 10) {
+                        Text("Processing Page")
+                            .font(.system(size: 20, weight: .bold))
+                        Text("\(processor.preWarmedCount)")
+                            .font(.system(size: 48, weight: .black, design: .monospaced))
+                            .foregroundColor(.accentColor)
+                        Text("/ \(processor.totalPageCount)")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Progress Bar
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: 440, height: 8)
+                        
+                        Capsule()
+                            .fill(LinearGradient(colors: [.accentColor, .blue], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: 440 * CGFloat(Double(processor.preWarmedCount) / Double(max(1, processor.totalPageCount))), height: 8)
+                    }
+                }
             }
         }
         .transition(.opacity)
+        .zIndex(1000) // Ensure it's above EVERYTHING
+    }
+
+    struct ScanningLaserEffect: View {
+        @State private var scanPos: CGFloat = -1.0
+        
+        var body: some View {
+            GeometryReader { geo in
+                Rectangle()
+                    .fill(LinearGradient(colors: [.clear, .accentColor.opacity(0.6), .clear], startPoint: .top, endPoint: .bottom))
+                    .frame(height: 60)
+                    .offset(y: scanPos * (geo.size.height + 60))
+                    .blendMode(.screen)
+                    .onAppear {
+                        withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                            scanPos = 1.0
+                        }
+                    }
+            }
+        }
     }
 
     // 🚀 V0.9.9.13: Localized Background reveal mask for granular refinement (Character-level)
@@ -581,8 +721,8 @@ struct RefinementView: View {
                     let effectiveWatermark = selectedWatermark == "Custom..." ? customWatermark : selectedWatermark
                     
                     Button(action: { 
-                        if viewMode == .original { withAnimation { viewMode = .edit } }
-                        applyWatermarkToCurrentPage(effectiveWatermark) 
+                        if viewMode == .original { withAnimation { viewMode = .editable } }
+                        processor.applyWatermarkToCurrentPage(pattern: effectiveWatermark)
                     }) {
                         Image(systemName: "doc.fill") // 🚀 Single Page Icon
                             .font(.system(size: 14, weight: .bold))
@@ -594,8 +734,8 @@ struct RefinementView: View {
                     .disabled(effectiveWatermark.isEmpty)
                     
                     Button(action: { 
-                        if viewMode == .original { withAnimation { viewMode = .edit } }
-                        applyWatermarkToAllPages(effectiveWatermark) 
+                        if viewMode == .original { withAnimation { viewMode = .editable } }
+                        processor.applyWatermarkToAllPages(pattern: effectiveWatermark)
                     }) {
                         Image(systemName: "doc.on.doc.fill") // 🚀 Multi Page Icon
                             .font(.system(size: 14, weight: .bold))
@@ -652,14 +792,14 @@ struct RefinementView: View {
                 .buttonStyle(.plain)
                 .help("Undo last action (Cmd+Z)")
 
+                // 🚀 V39.9: Optimized Reset Button (Fixed Width)
                 Button(action: resetCurrentPage) {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.counterclockwise").baselineOffset(-1)
                         Text("Reset").fixedSize()
                     }
                     .font(.subheadline).bold()
-                    .frame(height: 32)
-                    .padding(.horizontal, 10)
+                    .frame(width: 110, height: 32)
                     .background(Color.primary.opacity(0.08))
                     .foregroundColor(.primary)
                     .cornerRadius(8)
@@ -667,22 +807,39 @@ struct RefinementView: View {
                 .buttonStyle(.plain)
                 .help("Reset current page to original state")
 
+                // 🚀 V39.9: Global "Text" Toggle (Sync'd with persistent preference)
+                let allTextVisible = (processor.preferredViewState == .refined)
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        viewMode = .editable
+                        processor.batchSetViewState(to: allTextVisible ? .cleaned : .refined)
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: allTextVisible ? "sparkles" : "eye.slash")
+                        Text("Text").fixedSize()
+                    }
+                    .font(.subheadline).bold()
+                    .frame(width: 110, height: 32)
+                    .background(allTextVisible ? Color.accentColor : Color.primary.opacity(0.08))
+                    .foregroundColor(allTextVisible ? .white : .primary)
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+                .help(allTextVisible ? "Hide Refined Text (Background Only)" : "Show Refined Text")
+                
+                Divider().frame(height: 24).padding(.horizontal, 4)
+
                 Button(action: { 
-                    if viewMode == .original { withAnimation { viewMode = .edit } }
-                    processor.refinePage { _ in } 
+                    if viewMode == .original { withAnimation { viewMode = .editable } }
+                    Task { await processor.refinePage() }
                 }) {
                     Label("Refine", systemImage: "sparkles").font(.subheadline).bold()
-                        .frame(width: 120, height: 32)
+                        .frame(width: 110, height: 32)
                         .background(Color.accentColor).foregroundColor(.white).cornerRadius(8)
                 }
                 .buttonStyle(.plain)
                 .help("Trigger AI cleanup for this page")
-
-                Button(action: startBatchRefine) {
-                    Label("Batch Refine", systemImage: "sparkles.rectangle.stack").font(.subheadline).bold()
-                        .frame(width: 120, height: 32)
-                        .background(Color.blue).foregroundColor(.white).cornerRadius(8)
-                }.buttonStyle(.plain).help("AI Refine ALL pages in doc")
 
                 Divider().frame(height: 24).padding(.horizontal, 2)
 
@@ -720,7 +877,7 @@ struct RefinementView: View {
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "target").font(.caption2).foregroundColor(.secondary)
-                    Slider(value: $processor.ocrConfidenceThreshold, in: 0.30...0.95)
+                    Slider(value: $processor.ocrConfidenceThreshold, in: 0.10...0.95)
                         .frame(width: 70).controlSize(.mini)
                     Text(String(format: "%.2f", processor.ocrConfidenceThreshold))
                         .font(.system(.caption2, design: .monospaced)).foregroundColor(.secondary).frame(width: 32)
@@ -737,12 +894,20 @@ struct RefinementView: View {
                 
                 HStack(spacing: 8) {
                     Button(action: prevPage) { Image(systemName: "chevron.left") }
-                        .disabled(currentPageIndex == 0)
+                        .disabled(currentPageIndex == 0 || processor.isBatchProcessing || isExportingPPTX)
                         .help("Previous Page")
-                    Text("\(currentPageIndex + 1) / \(max(1, totalPageCount))")
+                    
+                    // 🚀 V37.13: Dynamic Page Track for Batch Processing
+                    let isProcessing = processor.isBatchProcessing || isExportingPPTX
+                    let displayPage = isProcessing ? processor.batchProgress.current : (currentPageIndex + 1)
+                    
+                    Text("\(displayPage) / \(max(1, totalPageCount))")
                         .font(.system(.caption, design: .monospaced).bold())
+                        .foregroundColor(isProcessing ? .accentColor : .primary)
+                        .scaleEffect(isProcessing ? 1.05 : 1.0)
+                        
                     Button(action: nextPage) { Image(systemName: "chevron.right") }
-                        .disabled(currentPageIndex >= totalPageCount - 1)
+                        .disabled(currentPageIndex >= totalPageCount - 1 || processor.isBatchProcessing || isExportingPPTX)
                         .help("Next Page")
                 }.padding(.horizontal, 8).padding(.vertical, 4).background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.1)))
                 
@@ -777,6 +942,8 @@ struct RefinementView: View {
     }
 
     // MARK: - 4. Methods
+    private let lastDirKey = "SlideRev.LastOpenDirectory"
+
     func selectPDF() {
         print("📂 [UI] Opening File Selection Panel...")
         let panel = NSOpenPanel()
@@ -785,10 +952,22 @@ struct RefinementView: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         
-        panel.begin { result in
-            if result == .OK, let url = panel.url {
-                self.openDocument(at: url)
+        // 🚀 Restore last directory with validation
+        if let lastPath = UserDefaults.standard.string(forKey: lastDirKey) {
+            let url = URL(fileURLWithPath: lastPath)
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
+                panel.directoryURL = url
             }
+        }
+        
+        if panel.runModal() == .OK, let url = panel.url {
+            // 🚀 Save last directory
+            let dirPath = url.deletingLastPathComponent().path
+            UserDefaults.standard.set(dirPath, forKey: lastDirKey)
+            UserDefaults.standard.synchronize() // Force persist
+            
+            self.openDocument(at: url)
         }
     }
 
@@ -814,6 +993,13 @@ struct RefinementView: View {
                     self.originalPath = url.path
                     self.pdfDocument = pdfDoc
                     self.totalPageCount = 1
+                    
+                    // 🚀 v56.3: Force State Order - Reset Processor BEFORE showing Modal
+                    self.processor.startPreWarmSequence(doc: pdfDoc)
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) { 
+                        self.isPreWarming = true 
+                    }
+                    
                     loadPage(at: 0, from: pdfDoc)
                 }
             }
@@ -825,14 +1011,14 @@ struct RefinementView: View {
                 self.totalPageCount = doc.pageCount
                 
                 if doc.pageCount > 0 {
-                    // 🚀 v37.1: Synchronous Waiting Gate for < 40 pages
-                    self.processor.preWarmedCount = 0
-                    if doc.pageCount <= 40 {
-                        withAnimation { self.isPreWarming = true }
+                    // 🚀 v56.3: Force State Order - Reset Processor BEFORE showing Modal
+                    self.processor.startPreWarmSequence(doc: doc)
+                    
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) { 
+                        self.isPreWarming = true 
                     }
                     
                     loadPage(at: 0, from: doc)
-                    preWarmAllPages(doc: doc)
                 } else {
                     self.errorMessage = "Loaded PDF has no pages."
                     self.showErrorAlert = true
@@ -842,17 +1028,9 @@ struct RefinementView: View {
     }
 
     private func preWarmAllPages(doc: PDFDocument) {
-        let total = doc.pageCount
-        let limit = min(total, 40)
-        
-        // 🚀 v37.2: Start from 0. The processor handles cache hits internally.
-        if limit > 0 {
-            for i in 0..<limit {
-                if let page = doc.page(at: i) {
-                    processor.preWarmPage(at: i, page: page)
-                }
-            }
-        }
+        // 🚀 V39.8: Sequential Synchronization
+        // Instead of firing concurrent tasks manually, we use the Processor's coordinated sequence.
+        processor.startPreWarmSequence(doc: doc)
     }
 
     func saveToNewPDF() {
@@ -865,8 +1043,20 @@ struct RefinementView: View {
             let panel = NSSavePanel()
             panel.allowedContentTypes = [.pdf]
             panel.nameFieldStringValue = sourceURL.deletingPathExtension().lastPathComponent + "_Refined.pdf"
+            
+            // 🚀 Default Save to the same directory as Open Panel
+            if let lastPath = UserDefaults.standard.string(forKey: lastDirKey) {
+                let url = URL(fileURLWithPath: lastPath)
+                panel.directoryURL = url
+            }
+            
             if panel.runModal() == .OK, let targetURL = panel.url {
                 refinedPath = targetURL
+                
+                // Update last directory if user chose a different one during save
+                let saveDir = targetURL.deletingLastPathComponent().path
+                UserDefaults.standard.set(saveDir, forKey: lastDirKey)
+                
                 performExport(source: sourceURL, target: targetURL)
                 
                 let metaURL = targetURL.deletingPathExtension().appendingPathExtension("json")
@@ -911,7 +1101,7 @@ struct RefinementView: View {
     private func loadPage(at index: Int, from document: PDFDocument? = nil) {
         let docToUse = document ?? self.pdfDocument
         
-        guard let doc = docToUse, index < doc.pageCount, let page = doc.page(at: index) else {
+        guard let doc = docToUse, index < doc.pageCount else {
             return 
         }
         processor.syncPageToCache(index: currentPageIndex)
@@ -922,12 +1112,8 @@ struct RefinementView: View {
         self.processor.currentPageIndex = index
         self.processor.totalPageCount = doc.pageCount
         
-        processor.processPage(page, at: index) { success in 
-            if success {
-                originPanOffset = .zero
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { autoFit() }
-            }
-        }
+        processor.switchToPage(index: index, from: doc)
+        originPanOffset = .zero
     }
     
     private func prevPage() { if currentPageIndex > 0 { loadPage(at: currentPageIndex - 1) } }
@@ -941,40 +1127,39 @@ struct RefinementView: View {
         guard savePanel.runModal() == .OK, let targetURL = savePanel.url else { return }
         
         isExportingPPTX = true
-        batchProgress = (0, totalPageCount)
+        processor.batchProgress = (0, totalPageCount)
         
+        let p = self.processor
+        let totalCount = self.totalPageCount
         DispatchQueue.global(qos: .userInitiated).async {
-            let total = self.totalPageCount
-            var fullPages = self.processor.pages
+            let total = totalCount
+            var fullPages = p.pages
             let doc = PDFDocument(url: URL(fileURLWithPath: sourcePath))
             
             for i in 0..<total {
                 if fullPages[i] == nil, let page = doc?.page(at: i) {
-                    DispatchQueue.main.async { self.batchProgress = (i + 1, total) }
-                    let snapshot = self.processor.takeOriginalSnapshot(page: page)
+                    DispatchQueue.main.async { p.batchProgress = (i + 1, total) }
+                    let snapshot = p.takeOriginalSnapshot(page: page)
                     fullPages[i] = AdvancedSlideProcessor.PageState(
                         pageIndex: i,
-                        pdfPage: page,
                         visualSize: snapshot.size,
                         raw: AdvancedSlideProcessor.RawData(
-                            originalImage: snapshot,
-                            baseCGImage: snapshot.cgImage(forProposedRect: nil, context: nil, hints: nil),
                             pdfSize: page.bounds(for: .mediaBox).size
                         ),
                         refined: AdvancedSlideProcessor.RefinedBundle(
-                            background: nil,
                             textLayers: [],
                             watermarkPattern: nil,
-                            isRefined: false
+                            isRefined: false,
+                            ocrThresholdUsed: nil
                         ),
                         isOCRComplete: false
                     )
                 }
             }
             
-            PPTXExporter.shared.export(pages: fullPages, to: targetURL, progress: { current, total in
+            PPTXExporter.shared.export(processor: p, pages: fullPages, to: targetURL, progress: { current, total in
                 DispatchQueue.main.async {
-                    self.batchProgress = (current, total)
+                    p.batchProgress = (current, total)
                 }
             }) { success, message in
                 DispatchQueue.main.async {
@@ -993,12 +1178,12 @@ struct RefinementView: View {
     }
 
     private func autoFit() {
-        guard let size = processor.originalImage?.size else { return }
-        if let window = NSApp.mainWindow {
-            let cw = window.frame.width - 60 - 80 
-            let ch = window.frame.height - 140 - 80
-            zoomScale = min(cw / size.width, ch / size.height, 1.0)
-        }
+        guard let size = processor.originalImage?.size, workspaceSize.width > 0 else { return }
+        // 🚀 V39.9: Precise workspace-based Auto-Fit
+        let padding: CGFloat = 80 // 40px padding on each side
+        let cw = workspaceSize.width - padding
+        let ch = workspaceSize.height - padding
+        zoomScale = min(cw / size.width, ch / size.height, 1.0)
     }
 
     private func resetCurrentPage() {
@@ -1010,137 +1195,9 @@ struct RefinementView: View {
     }
 
     private func startBatchRefine() {
-        if viewMode == .original { withAnimation { viewMode = .edit } }
-        print("🚀 [Batch] startBatchRefine called. originalPath: \(originalPath ?? "nil")")
-        guard let sourcePath = originalPath else { 
-            print("❌ [Batch] Aborted: originalPath is nil")
-            return 
-        }
-        let loadURL = URL(fileURLWithPath: sourcePath)
-        
-        processor.syncPageToCache(index: currentPageIndex)
-        
-        // 🚀 V27.5.3 Optimization: Start in background, only show UI after total is calculated
-        processor.batchStatus = "Scanning PDF Structures..."
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            guard let doc = PDFDocument(url: loadURL), doc.pageCount > 0 else {
-                print("⚠️ [Batch] Not a valid multi-page PDF. Checking if candidate is single image...")
-                
-                // 🚀 Fallback for single image (PNG/JPG)
-                let ext = loadURL.pathExtension.lowercased()
-                if ["png", "jpg", "jpeg", "webp"].contains(ext) {
-                    print("🖼️ [Batch] Single Image Mode Detected. Refining directly...")
-                    DispatchQueue.main.async { 
-                        self.batchProgress = (1, 1) 
-                        self.isBatchRefining = true
-                        self.processor.batchStatus = "Optimizing Image Background..."
-                    }
-                    self.processor.refinePage { success in
-                        DispatchQueue.main.async { 
-                            self.isBatchRefining = false
-                            self.processor.batchStatus = "Image Refinement Complete."
-                        }
-                    }
-                } else {
-                    print("❌ [Batch] Unsupported file format for batch: \(ext)")
-                    DispatchQueue.main.async { self.isBatchRefining = false }
-                }
-                return 
-            }
-            
-            let total = doc.pageCount
-            let savedIndex = self.currentPageIndex
-            
-            // 🚀 Step 1: Pre-initialize PageState skeletons to ensure switchToPage has context for every page
-            for i in 0..<total {
-                if self.processor.pages[i] == nil, let page = doc.page(at: i) {
-                    let pixelSize = page.bounds(for: .mediaBox).size
-                    let emptyState = AdvancedSlideProcessor.PageState(
-                        pageIndex: i, 
-                        pdfPage: page, 
-                        visualSize: pixelSize,
-                        raw: .init(originalImage: nil, baseCGImage: nil),
-                        refined: .init(background: nil, textLayers: [], watermarkPattern: nil, isRefined: false)
-                    )
-                    DispatchQueue.main.async { self.processor.pages[i] = emptyState }
-                }
-            }
-            
-            // 🚀 Step 2: NOW show the progress UI and persist the document
-            // 🚀 Fix (v27.6.6): MUST assign to self.pdfDocument to provide a strong reference!
-            // This prevents the document and its pages from being released prematurely.
-            DispatchQueue.main.async { 
-                self.pdfDocument = doc 
-                self.processor.activeDocument = doc 
-                self.batchProgress = (0, total)
-                self.isBatchRefining = true 
-                self.processor.batchStatus = "Starting Visual Refinement..."
-                self.processor.syncPageToCache(index: self.currentPageIndex)
-                
-                func processNext(_ index: Int) {
-                    if index >= total {
-                        DispatchQueue.main.async {
-                            self.batchProgress = (total, total)
-                            self.isBatchRefining = false
-                            self.processor.batchStatus = "Batch Refinement Complete."
-                            self.processor.switchToPage(index: savedIndex)
-                        }
-                        return
-                    }
-                    
-                    DispatchQueue.main.async {
-                        self.batchProgress = (index + 1, total)
-                        
-                        // 🚀 v36.0: Ensure we WAIT for switchToPage to complete before refining
-                        self.processor.switchToPage(index: index) { success in
-                            guard success else { 
-                                print("⚠️ [Batch] Failed to switch to page \(index), skipping...")
-                                processNext(index + 1)
-                                return 
-                            }
-                            
-                            // 🚀 v36.0: Delay refinement slightly to let Main UI catch up
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                // 🚀 v36.0: autoreleasepool MUST be INSIDE the async block to be effective
-                                autoreleasepool {
-                                    self.processor.refinePage { _ in
-                                        // 🚀 v33.0: Double-safety - force clear undoStack in batch mode
-                                        self.processor.clearUndoStack() 
-                                        
-                                        // 🚀 v36.0: Progressively sync every page to cache during batch
-                                        self.processor.syncPageToCache(index: index)
-                                        
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                            processNext(index + 1)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                processNext(0)
-            }
-        }
-    }
-
-    private func applyWatermarkToCurrentPage(_ pattern: String) {
-        guard !pattern.isEmpty else { return }
-        processor.applyPattern(pattern, toIndex: nil, currentOnly: true)
-        processor.refreshInpaintedBackground { _ in
-            self.processor.syncPageToCache(index: self.currentPageIndex)
-        }
-    }
-
-    private func applyWatermarkToAllPages(_ pattern: String) {
-        guard !pattern.isEmpty else { return }
-        processor.addGlobalErasurePattern(pattern)
-        processor.applyPattern(pattern, toIndex: nil, currentOnly: true)
-        processor.refreshInpaintedBackground { _ in
-            self.processor.syncPageToCache(index: self.currentPageIndex)
-        }
+        if viewMode == .original { withAnimation { viewMode = .editable } }
+        processor.preferredViewState = .refined // 🚀 V39.9: Ensure global state is set to Text
+        processor.batchRefineAll()
     }
 
     private func setupScrollWheelMonitor() {
@@ -1187,72 +1244,27 @@ struct RefinementView: View {
             }
     }
 
-    // 🚀 V30.0: DOCUMENT PRE-WARM OVERLAY
-    var documentPreWarmView: some View {
-        ZStack {
-            // Premium Gradient Background
-            LinearGradient(
-                gradient: Gradient(colors: [Color.accentColor.opacity(0.1), Color.black.opacity(0.05)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
-            VStack(spacing: 40) {
-                // Glassmorphism Card
-                VStack(spacing: 30) {
-                    ProgressView()
-                        .scaleEffect(2.0)
-                        .padding(.bottom, 10)
-                    
-                    VStack(spacing: 12) {
-                        Text("Optimizing Document")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                        
-                        Text("Achieving zero-latency AI access for your slides...")
-                            .font(.system(size: 16))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    // Progress Bar
-                    VStack(spacing: 10) {
-                        let target = min(40, totalPageCount)
-                        let progress = Double(processor.preWarmedCount) / max(1.0, Double(target))
-                        
-                        ProgressView(value: progress)
-                            .progressViewStyle(.linear)
-                            .tint(.accentColor)
-                            .frame(width: 300)
-                        
-                        Text("\(processor.preWarmedCount) / \(target) pages ready")
-                            .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            .foregroundColor(.accentColor)
-                    }
-                    .padding(.top, 10)
-                }
-                .padding(60)
-                .background(
-                    RoundedRectangle(cornerRadius: 32)
-                        .fill(Color(NSColor.windowBackgroundColor))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 32)
-                                .stroke(Color.accentColor.opacity(0.2), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.1), radius: 30)
-                )
-                
-                // Bottom Tips
-                HStack(spacing: 20) {
-                    Label("OCR Priming", systemImage: "text.magnifyingglass")
-                    Divider().frame(height: 15)
-                    Label("Rendering Engine", systemImage: "cpu")
-                    Divider().frame(height: 15)
-                    Label("Memory Caching", systemImage: "bolt.fill")
-                }
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.secondary)
-                .opacity(0.6)
+    
+    // MARK: - 5. 3-State View Logic (V33.0)
+    @ViewBuilder
+    private func batchStateButton(target: AdvancedSlideProcessor.ItemViewState, icon: String, help: String) -> some View {
+        let items = processor.recognizedItems
+        let isActive = !items.isEmpty && items.allSatisfy { $0.viewState == target }
+        
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                viewMode = .editable
+                processor.batchSetViewState(to: target)
             }
+        }) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: isActive ? .black : .semibold))
+                .frame(width: 38, height: 30)
+                .background(isActive ? Color.accentColor : Color.clear)
+                .foregroundColor(isActive ? .white : .primary.opacity(0.6))
+                .cornerRadius(6)
         }
+        .buttonStyle(.plain)
+        .help(help)
     }
 }

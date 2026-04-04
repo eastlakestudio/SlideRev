@@ -13,80 +13,100 @@ struct RecognizedItemOverlayView: View {
 
     var body: some View {
         let rect = item.rect
+        let boxWidth = rect.size.width * width
+        let boxHeight = rect.size.height * height
         let centerX = (rect.origin.x + rect.size.width / 2.0) * width
         let centerY = (rect.origin.y + rect.size.height / 2.0) * height
         
-        let _ = if item.isErased || hoverItemId == item.id {
-            AdvancedSlideProcessor.fileLog("👁️ [Render] Item(\(item.text.prefix(10))...): isErased=\(item.isErased), visible=\(item.isTextVisible), progress=\(String(format: "%.2f", item.refinementProgress)), edited='\(item.editedText)'")
-        } else {
-            ()
-        }
-        
-        ZStack(alignment: .topLeading) {
-            // V0.9.6.1: Only render if item is not erased OR text is explicitly visible
-            if item.isErased && !item.isTextVisible {
-                EmptyView()
-            } else if item.isErased {
-                TextField("", text: $item.editedText, axis: item.editedText.contains("\n") ? .vertical : .horizontal)
-                    .textFieldStyle(.plain)
-                    .font(.custom(item.fontName, size: item.fontSize * zoomScale).weight(item.isBold ? .bold : .regular))
-                    .multilineTextAlignment(.center) // Internal Text Centering
-                    .foregroundColor(Color(nsColor: NSColor(cgColor: item.color) ?? .black))
-                    .accentColor(.orange)
-                    .rotationEffect(.degrees(item.rotation))
-                    .padding(0)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center) 
-                    .background(Color.clear)
-                    .mask(
-                        // 🚀 Scan Reveal: Wipe from left to right
-                        HStack(spacing: 0) {
-                            let progress = item.refinementProgress
-                            // 🚀 TRAIL PROGRESS: Text starts revealing after 25% wipe, then catches up
-                            let trailProgress = max(0.0, (progress - 0.25) / 0.75)
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: rect.size.width * width * CGFloat(trailProgress))
-                            Spacer(minLength: 0)
-                        }
-                    )
-                    .overlay(
-                        ZStack {
-                            // Normal Border
-                            Rectangle()
-                                .stroke(selectedItemId == item.id ? Color.orange : (hoverItemId == item.id ? Color.accentColor.opacity(0.5) : Color.clear), lineWidth: 2)
-                            
-                            // 🚀 Interactive Hover for Refined Items: Dashed Border
-                            if item.isErased && hoverItemId == item.id {
-                                Rectangle()
-                                    .stroke(Color.orange, style: StrokeStyle(lineWidth: 2, dash: [4]))
-                                    .opacity(0.8)
-                            }
-                        }
-                        .shadow(color: selectedItemId == item.id ? .orange.opacity(0.5) : .clear, radius: 4)
-                    )
-            } else {
-                Rectangle()
-                    .fill(Color.clear)
-                    .overlay(Rectangle().stroke(selectedItemId == item.id || hoverItemId == item.id ? Color.accentColor : Color.clear, lineWidth: (selectedItemId == item.id || hoverItemId == item.id) ? 2 : 1))
-            }
-            
-        }
-        .frame(width: rect.size.width * width, height: rect.size.height * height)
-        .contentShape(Rectangle())
-        .zIndex(selectedItemId == item.id ? 100 : 0)
-        .onHover { inside in 
-            withAnimation(.easeInOut(duration: 0.1)) { hoverItemId = inside ? item.id : nil } 
-        }
-        // 🚀 核心優化：ExclusiveGesture 優先等待雙擊，避免單擊干擾
-        .gesture(
-            TapGesture(count: 2)
-                .onEnded { 
-                    withAnimation { self.processor.eraseItem(id: item.id) } 
+        // 🚀 V39.5: Instant Toggle - No Delay. UI hides immediately on mouse exit/blur.
+        let shouldShowUI = hoverItemId == item.id || selectedItemId == item.id
+
+        ZStack(alignment: .topTrailing) {
+            // Main Text Box (Interactive Container)
+            ZStack(alignment: .topLeading) {
+                // 🚀 V39.9: Hit-test fix - Nearly invisible layer to ensure macOS hover events are captured
+                Color.white.opacity(0.001)
+                
+                // 🚀 V41.0: Original Image Crop Layer (Deep Logic)
+                // If item is set to .original, we overlay the actual original pixels from base image 
+                // on top of the clean inpainted background but under interaction layers.
+                if item.viewState == .original, let slice = processor.getOriginalSlice(for: item.rect) {
+                    Image(nsImage: NSImage(cgImage: slice, size: CGSize(width: boxWidth, height: boxHeight)))
+                        .resizable()
+                        .frame(width: boxWidth, height: boxHeight)
                 }
-                .exclusively(before: TapGesture(count: 1).onEnded { 
-                    self.selectedItemId = item.id 
-                })
-        )
+
+                // Hover/Selection Background (Subtle indicator)
+                if shouldShowUI {
+                    Rectangle()
+                        .fill(selectedItemId == item.id ? Color.orange.opacity(0.04) : Color.accentColor.opacity(0.06))
+                }
+
+                // Text Content (Only in Refined mode)
+                // 🚀 V58.4: GHOSTING FIX - Hide text if background is not ready yet
+                let isTextReady = item.isTextVisible && (processor.inpaintedImage != nil)
+                if isTextReady {
+                    TextField("", text: $item.editedText, axis: item.editedText.contains("\n") ? .vertical : .horizontal)
+                        .textFieldStyle(.plain)
+                        .font(.custom(item.fontName, size: item.fontSize * zoomScale).weight(item.isBold ? .bold : .regular))
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(Color(nsColor: NSColor(cgColor: item.color) ?? .black))
+                        .accentColor(.orange)
+                        .rotationEffect(.degrees(item.rotation))
+                        .padding(0)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center) 
+                        .background(Color.clear)
+                }
+                
+                // Status/Selection Border
+                Rectangle()
+                    .stroke(selectedItemId == item.id ? Color.orange : (shouldShowUI ? Color.accentColor : Color.clear), 
+                            style: StrokeStyle(lineWidth: (selectedItemId == item.id || shouldShowUI) ? 2 : 0, 
+                                               dash: (item.viewState == .cleaned && shouldShowUI) ? [4, 2] : []))
+                    .shadow(color: selectedItemId == item.id ? .orange.opacity(0.4) : (shouldShowUI ? .accentColor.opacity(0.3) : .clear), radius: 4)
+            }
+            .frame(width: boxWidth, height: boxHeight)
+            .contentShape(Rectangle())
+            .onContinuousHover { phase in
+                switch phase {
+                case .active(_):
+                    hoverItemId = item.id
+                case .ended:
+                    hoverItemId = nil
+                }
+            }
+            .gesture(
+                TapGesture(count: 2)
+                    .onEnded { 
+                        withAnimation { processor.setItemState(id: item.id, to: .refined) }
+                    }
+            )
+            .gesture(
+                TapGesture(count: 1)
+                    .onEnded { 
+                        self.selectedItemId = item.id 
+                    }
+            )
+            .contextMenu {
+                // 🚀 V58.0: Right-click Menu for Mode Switching (English Only)
+                Button(action: { 
+                    withAnimation { processor.setItemState(id: item.id, to: .original) }
+                }) {
+                    Label("Original Image", systemImage: "photo")
+                }
+                Button(action: { 
+                    withAnimation { processor.setItemState(id: item.id, to: .cleaned) }
+                }) {
+                    Label("Background Only", systemImage: "eye.slash")
+                }
+                Button(action: { 
+                    withAnimation { processor.setItemState(id: item.id, to: .refined) }
+                }) {
+                    Label("Refine Text", systemImage: "sparkles")
+                }
+            }
+        }
         .position(x: centerX, y: centerY)
+        .zIndex(selectedItemId == item.id ? 100 : 0)
     }
 }
