@@ -33,6 +33,9 @@ class AdvancedSlideProcessor: ObservableObject {
         var viewState: ItemViewState = .original
         var isManualEraser: Bool = false
         var refinementProgress: Double = 0.0 // 🚀 V0.9.9.22: Progress for horizontal scan animation (0.0 to 1.0)
+        /// 🆕 Paragraph Grouping: 标记该 item 所属的段落合并组，由 ParagraphGrouper 在 OCR 后写入
+        var groupId: UUID? = nil
+        var textAlignment: String = "l" // "l", "ctr", "r"
         
         var isErased: Bool { viewState != .original }
         var isTextVisible: Bool { viewState == .refined }
@@ -54,10 +57,10 @@ class AdvancedSlideProcessor: ObservableObject {
         }
 
         enum CodingKeys: String, CodingKey {
-            case id, text, editedText, rect, pixelRect, charRects, fontSize, fontName, colorComponents, isBold, rotation, isVisible, viewState, isManualEraser
+            case id, text, editedText, rect, pixelRect, charRects, fontSize, fontName, colorComponents, isBold, rotation, isVisible, viewState, isManualEraser, groupId, textAlignment
         }
         
-        init(text: String, editedText: String, rect: CGRect, pixelRect: CGRect, charRects: [CGRect], fontSize: CGFloat, color: CGColor, viewState: ItemViewState = .original, isManualEraser: Bool = false, isBold: Bool = false) {
+        init(text: String, editedText: String, rect: CGRect, pixelRect: CGRect, charRects: [CGRect], fontSize: CGFloat, color: CGColor, viewState: ItemViewState = .original, isManualEraser: Bool = false, isBold: Bool = false, groupId: UUID? = nil, textAlignment: String = "l") {
             self.text = text; self.editedText = editedText; self.rect = rect; self.pixelRect = pixelRect
             self.charRects = charRects; self.fontSize = fontSize
             let rgbColor = color.converted(to: CGColorSpaceCreateDeviceRGB(), intent: .defaultIntent, options: nil) ?? color
@@ -67,6 +70,8 @@ class AdvancedSlideProcessor: ObservableObject {
             self.isManualEraser = isManualEraser
             self.refinementProgress = (viewState != .original) ? 1.0 : 0.0 // Set initial progress based on erased state
             self.isBold = isBold
+            self.groupId = groupId
+            self.textAlignment = textAlignment
         }
     }
 
@@ -208,7 +213,8 @@ class AdvancedSlideProcessor: ObservableObject {
         if !isOCRComplete {
             if let cg = renderPageThumbnail(at: index, resolution: pixelSize) {
                 
-                let items = await self.performOCR(on: cg, pixelSize: pixelSize)
+                let rawItems = await self.performOCR(on: cg, pixelSize: pixelSize)
+                let items = ParagraphGrouper.groupAndMerge(items: rawItems)
                 
                 currentItems = items
                 isOCRComplete = true
@@ -508,6 +514,7 @@ class AdvancedSlideProcessor: ObservableObject {
                     
                     items.append(RecognizedItem(text: top.string, editedText: top.string, rect: normalizedRect, pixelRect: pixelRect, charRects: charRects, fontSize: fontSize, color: itemColor, viewState: .refined, isBold: false))
                 }
+                // 返回原始单行 items；段落合并在 refinePage() 中执行
                 continuation.resume(returning: items)
             }
             ocrRequest.recognitionLevel = .accurate
@@ -739,9 +746,12 @@ class AdvancedSlideProcessor: ObservableObject {
         // 🚀 V58.6: DYNAMIC OCR RE-SCAN
         // 1. Perform fresh OCR using current user-defined threshold
         let freshItems = await performOCR(on: base, pixelSize: pixelSize)
-        
+
+        // 🆕 Paragraph Merging: Refine 阶段执行段落合并，多行以 \n 分隔
+        let mergedItems = ParagraphGrouper.groupAndMerge(items: freshItems)
+
         // 2. Prepare items for refined state
-        let targetItems = freshItems.map { item -> RecognizedItem in
+        let targetItems = mergedItems.map { item -> RecognizedItem in
             var newItem = item
             newItem.viewState = .refined
             return newItem

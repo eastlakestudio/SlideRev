@@ -25,6 +25,7 @@ class PPTXExporter {
             // 🚀 v37.5: 100% Sandbox-Safe Template Preparation.
             // Instead of unzipping at runtime (which is restricted), we bundle the expanded folder 'PPTXTemplate'.
             let templateUrl = Bundle.main.url(forResource: "PPTXTemplate", withExtension: nil)
+                ?? Self.devTemplateFallbackURL()
             AdvancedSlideProcessor.fileLog("🔍 [PPTXExporter] Bundle Resolved Template URL: \(templateUrl?.path ?? "N/A")")
             
             guard let finalTemplate = templateUrl else {
@@ -150,14 +151,20 @@ class PPTXExporter {
             let archive = try Archive(url: localZipURL, accessMode: .create)
             
             // Recursively add everything in tempDir to archive
+            // 🔧 Fix: 在 macOS 上 temporaryDirectory 是 /var/folders/... 的 symlink，
+            //         解析后为 /private/var/folders/...；fileURL.path 会自动 resolve，
+            //         所以必须用 resolvingSymlinksInPath 对齐，否则 relativePath 会携带绝对路径前缀。
+            let resolvedTempDir = tempDir.resolvingSymlinksInPath().path + "/"
             let enumerator = fileManager.enumerator(at: tempDir, includingPropertiesForKeys: [.isDirectoryKey], options: [])
             while let fileURL = enumerator?.nextObject() as? URL {
                 let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey])
                 if resourceValues.isDirectory ?? false { continue } // Skip directory entries
-                
-                let relativePath = fileURL.path.replacingOccurrences(of: tempDir.path + "/", with: "")
-                if relativePath.isEmpty || relativePath == tempDir.path { continue }
-                
+
+                let resolvedFilePath = fileURL.resolvingSymlinksInPath().path
+                guard resolvedFilePath.hasPrefix(resolvedTempDir) else { continue }
+                let relativePath = String(resolvedFilePath.dropFirst(resolvedTempDir.count))
+                guard !relativePath.isEmpty else { continue }
+
                 try archive.addEntry(with: relativePath, fileURL: fileURL)
             }
             
@@ -177,28 +184,54 @@ class PPTXExporter {
         var xml = ""
         let pw = page.raw.pdfSize.width
         let ph = page.raw.pdfSize.height
-        
-        for (i, item) in page.refined.textLayers.enumerated() {
-            // 🚀 V58.8: EXPORT FILTER - Only export text boxes that are meant to be visible
-            if !item.isErased || !item.isTextVisible { continue }
-            let text = escapeXML(item.editedText.isEmpty ? item.text : item.editedText)
-            
+
+        // items 已在 OCR 阶段合并（多行以 \n 分隔），直接遍历
+        let visibleItems = page.refined.textLayers.filter { !$0.isManualEraser && $0.isErased && $0.isTextVisible }
+
+        for (shapeIdx, item) in visibleItems.enumerated() {
+            let displayText = item.editedText.isEmpty ? item.text : item.editedText
+            let lines = displayText.components(separatedBy: "\n")
+            let isMultiLine = lines.count > 1
+
             let xPt = offX + (item.rect.origin.x * pw * fitScale)
             let yPt = offY + (item.rect.origin.y * ph * fitScale)
             let wPt = item.rect.size.width * pw * fitScale
             let hPt = item.rect.size.height * ph * fitScale
-            
+
             let xEMU = Int64(xPt * EMU_PER_PT)
             let yEMU = Int64(yPt * EMU_PER_PT)
             let wEMU = Int64(wPt * EMU_PER_PT)
             let hEMU = Int64(hPt * EMU_PER_PT)
-            
+
             let finalSizePt = (item.fontSize / (200.0 / 72.0)) * fitScale
-            let sz = Int(finalSizePt * 100)
-            
+            let sz = max(1, Int(finalSizePt * 100))
             let hex = hexString(from: item.color)
-            let shapeId = 1000 + i
-            
+            let shapeId = 1000 + shapeIdx
+
+            // 生成各行的 <a:p> 段落
+            var paragraphsXML = ""
+            for line in lines {
+                let lineText = escapeXML(line)
+                paragraphsXML += """
+                    <a:p>
+                        <a:pPr algn="\(item.textAlignment)" rtl="0"/>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="\(sz)" b="\(item.isBold ? "1" : "0")">
+                                <a:solidFill><a:srgbClr val="\(hex)"/></a:solidFill>
+                                <a:latin typeface="\(item.fontName)"/>
+                                <a:ea typeface="\(item.fontName)"/>
+                            </a:rPr>
+                            <a:t>\(lineText)</a:t>
+                        </a:r>
+                    </a:p>
+            """
+            }
+
+            // 单行：wrap="none"，居中对齐；多行：wrap="square"，顶部对齐
+            let bodyPr = isMultiLine
+                ? "<a:bodyPr anchor=\"t\" wrap=\"square\" lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\"><a:spAutoFit/></a:bodyPr>"
+                : "<a:bodyPr anchor=\"ctr\" wrap=\"none\" lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\"><a:spAutoFit/></a:bodyPr>"
+
             xml += """
             <p:sp>
                 <p:nvSpPr><p:cNvPr id="\(shapeId)" name=""/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
@@ -207,27 +240,16 @@ class PPTXExporter {
                     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
                 </p:spPr>
                 <p:txBody>
-                    <a:bodyPr anchor="ctr" wrap="none" lIns="0" tIns="0" rIns="0" bIns="0">
-                        <a:spAutoFit/>
-                    </a:bodyPr>
+                    \(bodyPr)
                     <a:lstStyle/>
-                    <a:p>
-                        <a:pPr algn="ctr" rtl="0"/>
-                        <a:r>
-                            <a:rPr lang="en-US" sz="\(sz)" b="\(item.isBold ? "1" : "0")">
-                                <a:solidFill><a:srgbClr val="\(hex)"/></a:solidFill>
-                                <a:latin typeface="\(item.fontName)"/>
-                                <a:ea typeface="\(item.fontName)"/>
-                            </a:rPr>
-                            <a:t>\(text)</a:t>
-                        </a:r>
-                    </a:p>
+                    \(paragraphsXML)
                 </p:txBody>
             </p:sp>
             """
         }
         return xml
     }
+
     
     private func patchIronTriangleGolden(tempDir: URL, pageCount: Int, w: Int64, h: Int64) throws {
         // 1. [Content_Types].xml: Replace existing slide overrides
@@ -290,6 +312,20 @@ class PPTXExporter {
         }
         
         try pXML.write(to: presPath, atomically: true, encoding: .utf8)
+    }
+
+    /// 🆕 开发环境回退路径：通过 #file 定位项目根目录查找 PPTXTemplate
+    /// 与 NeuralInpainter 中 LaMa 模型的回退逻辑保持一致。
+    private static func devTemplateFallbackURL() -> URL? {
+        let sourceURL = URL(fileURLWithPath: #file)
+        let projectRoot = sourceURL
+            .deletingLastPathComponent() // PPTXExporter.swift -> SlideRev/
+            .deletingLastPathComponent() // SlideRev/ -> Sources/
+            .deletingLastPathComponent() // Sources/ -> root/
+        let devPath = projectRoot.appendingPathComponent("PPTXTemplate")
+        let exists = FileManager.default.fileExists(atPath: devPath.path)
+        AdvancedSlideProcessor.fileLog("🔧 [PPTXExporter] Dev Template Fallback: \(devPath.path) (exists: \(exists))")
+        return exists ? devPath : nil
     }
 }
 

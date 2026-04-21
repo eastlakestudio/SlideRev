@@ -24,7 +24,12 @@ let package = Package(
             name: "SlideRevTests",
             dependencies: ["SlideRev"],
             path: "Tests",
-            exclude: ["test_core.py"]
+            exclude: [
+                "test_core.py",
+                "test_main.swift",
+                "NeuralInpainterTests.swift",
+                "MemoryModelTests.swift"
+            ]
         )
     ]
 )

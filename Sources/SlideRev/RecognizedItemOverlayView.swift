@@ -46,15 +46,30 @@ struct RecognizedItemOverlayView: View {
                 // 🚀 V58.4: GHOSTING FIX - Hide text if background is not ready yet
                 let isTextReady = item.isTextVisible && (processor.inpaintedImage != nil)
                 if isTextReady {
-                    TextField("", text: $item.editedText, axis: item.editedText.contains("\n") ? .vertical : .horizontal)
+                    let isMultiLine = item.editedText.contains("\n")
+                    
+                    let txtAlignment: TextAlignment = {
+                        if item.textAlignment == "l" { return .leading }
+                        if item.textAlignment == "r" { return .trailing }
+                        return .center
+                    }()
+                    
+                    let boxAlignment: Alignment = {
+                        if item.textAlignment == "l" { return isMultiLine ? .topLeading : .leading }
+                        if item.textAlignment == "r" { return isMultiLine ? .topTrailing : .trailing }
+                        return isMultiLine ? .top : .center
+                    }()
+
+                    TextField("", text: $item.editedText, axis: isMultiLine ? .vertical : .horizontal)
                         .textFieldStyle(.plain)
                         .font(.custom(item.fontName, size: item.fontSize * zoomScale).weight(item.isBold ? .bold : .regular))
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(txtAlignment)
                         .foregroundColor(Color(nsColor: NSColor(cgColor: item.color) ?? .black))
                         .accentColor(.orange)
                         .rotationEffect(.degrees(item.rotation))
                         .padding(0)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center) 
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: boxAlignment)
                         .background(Color.clear)
                 }
                 
