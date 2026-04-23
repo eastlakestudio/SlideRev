@@ -22,6 +22,11 @@ This document contains the metadata and information required for submitting **Sl
 *   **Promotional Text:** 
     Turn flat slide images into editable PPTX files instantly. Our on-device AI perfectly reconstructs backgrounds and text layers. 100% offline and privacy-first!
 
+## 4. What's New in Version 1.0.1
+
+*   **App Store Ratings Integration:** We've integrated native prompts to make it easier for you to share your feedback and rate the app on the Mac App Store.
+*   **Performance Improvements:** Under-the-hood optimizations for a smoother, faster PDF and PPTX export experience.
+*   **Bug Fixes:** General stability enhancements to ensure reliable conversions.
 *   **Description:**
     AI Slide Editor (formerly SlideRev) is a professional tool designed for academics, researchers, and office professionals who need to reverse-engineer exported PDF presentations. Using state-of-the-art AI Inpainting (LaMa), AI Slide Editor allows you to:
     - **Erase Backgrounds:** Automatically remove watermarks, logos, or distracting backgrounds with high fidelity.
