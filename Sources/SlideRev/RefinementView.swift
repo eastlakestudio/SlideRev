@@ -1,8 +1,12 @@
 import SwiftUI
 import PDFKit
 import UniformTypeIdentifiers
+import StoreKit
 
 struct RefinementView: View {
+    @Environment(\.requestReview) private var requestReview
+    @AppStorage("SlideRev.ExportCount") private var exportCount: Int = 0
+    
     @StateObject var processor = AdvancedSlideProcessor()
     @State private var zoomScale: CGFloat = 0.8
     @State private var selectedItemId: UUID?
@@ -1084,6 +1088,13 @@ struct RefinementView: View {
                     self.processor.isDirty = false
                     self.showSaveToast = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { self.showSaveToast = false }
+                    
+                    self.exportCount += 1
+                    print("🌟 [AppStore] Export Count incremented to: \(self.exportCount)")
+                    if [1, 3, 10].contains(self.exportCount) {
+                        print("🌟 [AppStore] Requesting App Store Review for count: \(self.exportCount)")
+                        self.requestReview()
+                    }
                 }
             }
         }
@@ -1168,6 +1179,13 @@ struct RefinementView: View {
                         self.showSaveToast = true
                         NSWorkspace.shared.activateFileViewerSelecting([targetURL])
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { self.showSaveToast = false }
+                        
+                        self.exportCount += 1
+                        print("🌟 [AppStore] Export Count incremented to: \(self.exportCount)")
+                        if [1, 3, 10].contains(self.exportCount) {
+                            print("🌟 [AppStore] Requesting App Store Review for count: \(self.exportCount)")
+                            self.requestReview()
+                        }
                     } else {
                         self.exportErrorMessage = message
                         self.showExportError = true

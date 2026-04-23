@@ -7,12 +7,13 @@ set -e
 
 # --- Configuration ---
 APP_NAME="SlideRev"
+BUNDLE_NAME="AI Slide Editor"
 BUNDLE_ID="com.eastlakestudio.sliderev"
-VERSION="0.9.8"
+VERSION="1.0.1"
 BUILD_DIR="build_archive"
 DIST_DIR="dist_archive"
-APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
-PKG_OUT="${DIST_DIR}/${APP_NAME}.pkg"
+APP_BUNDLE="${DIST_DIR}/${BUNDLE_NAME}.app"
+PKG_OUT="${DIST_DIR}/${BUNDLE_NAME}.pkg"
 INFO_PLIST="Info.plist"
 
 # Signing Identities

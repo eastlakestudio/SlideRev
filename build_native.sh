@@ -4,16 +4,17 @@
 set -e
 
 APP_NAME="SlideRev"
+BUNDLE_NAME="AI Slide Editor"
 BUNDLE_ID="com.eastlakestudio.sliderev"
-VERSION="0.9.8"
+VERSION="1.0.1"
 BUILD_DIR="build_app"
 DIST_DIR="dist"
-APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
+APP_BUNDLE="${DIST_DIR}/${BUNDLE_NAME}.app"
 INFO_PLIST="Info.plist"
 ENTITLEMENTS="SlideRev.local.entitlements"
 
-# Final Placement: pdf2pptx/SlideRev_v0.9.8.app
-FINAL_PRODUCT="SlideRev_v${VERSION}.app"
+# Final Placement: pdf2pptx/SlideRev_v1.0.0.app
+FINAL_PRODUCT="${BUNDLE_NAME}_v${VERSION}.app"
 
 echo "🚀 Starting Universal Build (arm64 + x86_64) for ${APP_NAME} v${VERSION}..."
 
@@ -55,7 +56,7 @@ cp "${INFO_PLIST}" "${APP_BUNDLE}/Contents/Info.plist"
 echo "APPL????" > "${APP_BUNDLE}/Contents/PkgInfo"
 
 # 7. Metadata Sync (Final check)
-/usr/libexec/PlistBuddy -c "Set :CFBundleName ${APP_NAME}" "${APP_BUNDLE}/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleName ${BUNDLE_NAME}" "${APP_BUNDLE}/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable ${APP_NAME}" "${APP_BUNDLE}/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_ID}" "${APP_BUNDLE}/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION}" "${APP_BUNDLE}/Contents/Info.plist"

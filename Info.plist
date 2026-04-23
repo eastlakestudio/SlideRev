@@ -8,14 +8,16 @@
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.eastlakestudio.sliderev</string>
+	<key>CFBundleDisplayName</key>
+	<string>AI Slide Editor</string>
 	<key>CFBundleName</key>
-	<string>SlideRev</string>
+	<string>AI Slide Editor</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.9.8</string>
+	<string>1.0.1</string>
 	<key>CFBundleVersion</key>
-	<string>63</string>
+	<string>65</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
