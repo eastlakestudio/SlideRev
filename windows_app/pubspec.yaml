@@ -38,6 +38,7 @@ dependencies:
   onnxruntime: ^1.4.1
   archive: ^4.0.9
   xml: ^6.6.1
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:
