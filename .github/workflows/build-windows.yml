@@ -22,6 +22,13 @@ jobs:
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
 
+      - name: Download ONNX models
+        working-directory: ./windows_app
+        shell: bash
+        run: |
+          chmod +x download_models.sh
+          ./download_models.sh
+
       - name: Install dependencies
         working-directory: ./windows_app
         run: flutter pub get
