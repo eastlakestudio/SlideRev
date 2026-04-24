@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'core/vision_ocr_adapter.dart';
+import 'core/lama_inpainting_engine.dart';
+import 'core/pdf_engine.dart';
+import 'core/model_manager.dart';
+import 'pages/refinement_page.dart';
+import 'dart:typed_data';
 
 void main() {
   runApp(const SlideRevWindowsApp());
@@ -48,40 +54,64 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
 
     if (result != null && result.files.single.path != null) {
       if (!mounted) return;
-      setState(() {
-        _selectedFilePath = result.files.single.path;
-        _appState = AppState.processing;
-      });
-
-      // 模拟 AI 处理流程
-      await _simulateProcessing();
+      // 真正开始处理流程
+      await _processDocument();
     }
   }
 
-  Future<void> _simulateProcessing() async {
-    final stages = [
-      {"text": "Analyzing PDF Structure...", "progress": 0.1},
-      {"text": "Extracting Layout Nodes...", "progress": 0.3},
-      {"text": "Running ONNX OCR Engine...", "progress": 0.5},
-      {"text": "Removing Background Noise...", "progress": 0.7},
-      {"text": "Vectorizing UI Elements...", "progress": 0.85},
-      {"text": "Generating Editable PPTX...", "progress": 0.95},
-      {"text": "Finalizing Document...", "progress": 1.0},
-    ];
+  Future<void> _processDocument() async {
+    if (_selectedFilePath == null) return;
 
-    for (var stage in stages) {
+    try {
+      // 1. 初始化模型
+      setState(() { _statusText = "Loading AI Models..."; _progress = 0.1; });
+      final ocrModelPath = await ModelManager().getLocalModelPath('assets/models/ocr_model.onnx');
+      final lamaModelPath = await ModelManager().getLocalModelPath('assets/models/lama_fp32.onnx');
+      
+      final ocrAdapter = VisionOcrAdapter();
+      final lamaEngine = LamaInpaintingEngine();
+      
+      await ocrAdapter.init(ocrModelPath);
+      await lamaEngine.init(lamaModelPath);
+
+      // 2. 渲染 PDF 页面
+      setState(() { _statusText = "Rendering Document..."; _progress = 0.3; });
+      final pdfEngine = PdfEngine();
+      final pageImage = await pdfEngine.renderPageToImage(_selectedFilePath!, 1);
+      if (pageImage == null) throw Exception("Failed to render PDF");
+
+      // 3. 执行 OCR 识别
+      setState(() { _statusText = "Running OCR Recognition..."; _progress = 0.6; });
+      final nodes = await ocrAdapter.recognizeText(pageImage.bytes);
+
+      // 4. 执行背景修复 (暂时跳过复杂的 Mask 构造逻辑，直接进入功能页)
+      setState(() { _statusText = "Finalizing Workspace..."; _progress = 0.9; });
+      await Future.delayed(const Duration(milliseconds: 500));
+
       if (!mounted) return;
-      setState(() {
-        _statusText = stage["text"] as String;
-        _progress = stage["progress"] as double;
-      });
-      await Future.delayed(const Duration(milliseconds: 800));
-    }
+      
+      // 5. 跳转到功能编辑页面
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RefinementPage(
+            imageBytes: pageImage.bytes,
+            initialNodes: nodes,
+          ),
+        ),
+      );
 
-    if (!mounted) return;
-    setState(() {
-      _appState = AppState.finished;
-    });
+      setState(() {
+        _appState = AppState.dashboard; // 回到首页状态，因为已经 Push 了新页面
+      });
+      
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Processing Error: $e'), backgroundColor: Colors.red),
+      );
+      _reset();
+    }
   }
 
   void _reset() {

@@ -39,6 +39,10 @@ dependencies:
   archive: ^4.0.9
   xml: ^6.6.1
   file_picker: ^11.0.2
+  image: ^4.3.0
+  path_provider: ^2.1.2
+  path: ^1.9.0
+  pdf: ^3.11.1
 
 dev_dependencies:
   flutter_test:
