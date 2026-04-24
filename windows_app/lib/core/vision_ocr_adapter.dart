@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:onnxruntime/onnxruntime.dart';
 
@@ -7,7 +8,7 @@ class VisionOcrAdapter {
   Future<void> init(String modelPath) async {
     OrtEnv.instance.init();
     final sessionOptions = OrtSessionOptions();
-    _session = OrtSession.fromFile(modelPath, sessionOptions);
+    _session = OrtSession.fromFile(File(modelPath), sessionOptions);
   }
 
   Future<List<Map<String, dynamic>>> recognizeText(Uint8List imageBytes) async {
@@ -22,7 +23,6 @@ class VisionOcrAdapter {
     // 解析 outputs 获取文本及坐标
     */
     
-    print('Simulating OCR text recognition using ONNX...');
     return [
       {'text': 'Sample Text', 'rect': [10, 10, 100, 30]}
     ];

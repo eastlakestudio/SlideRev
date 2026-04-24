@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:xml/xml.dart';
 
@@ -10,6 +9,8 @@ class PptxGenerator {
     // 3. 将 OCR 识别的文字节点注入到 slide.xml
     // 4. 将背景图片替换
     // 5. 重新打包为 zip (pptx)
+    
+
     
     final archive = Archive();
     
@@ -34,12 +35,12 @@ class PptxGenerator {
     // 写入本地
     final encoder = ZipFileEncoder();
     encoder.create(outputPath);
+
     for (final file in archive) {
       if (file.isFile) {
          // 注意：实际应用中需要借助 Dart IO 处理真正的写文件逻辑
       }
     }
     encoder.close();
-    print('Generated PPTX to $outputPath');
   }
 }

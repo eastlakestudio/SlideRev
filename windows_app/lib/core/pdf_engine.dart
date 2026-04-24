@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:pdfx/pdfx.dart';
 
 class PdfEngine {

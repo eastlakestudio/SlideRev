@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -37,12 +36,13 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
   String? _selectedFilePath;
 
   Future<void> _onImportPdf() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'heic', 'tiff'],
     );
 
     if (result != null && result.files.single.path != null) {
+      if (!mounted) return;
       setState(() {
         _selectedFilePath = result.files.single.path;
       });
@@ -56,7 +56,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Center(
         child: Column(
           children: [
@@ -85,7 +85,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onBackground,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -96,7 +96,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -105,7 +105,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                       "Seamlessly convert screenshots, mobile captures, and citations into vectorized PPTX elements.",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -126,13 +126,17 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                   curve: Curves.easeOut,
                   width: 640,
                   height: 440,
-                  transform: Matrix4.identity()..scale(_isHoveringDashboard ? 1.02 : 1.0),
+                  transform: Matrix4.diagonal3Values(
+                    _isHoveringDashboard ? 1.02 : 1.0,
+                    _isHoveringDashboard ? 1.02 : 1.0,
+                    1.0,
+                  ),
                   transformAlignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(_isHoveringDashboard ? 0.06 : 0.03),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 0.06 : 0.03),
                     borderRadius: BorderRadius.circular(32),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(_isHoveringDashboard ? 1.0 : 0.2),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 1.0 : 0.2),
                       width: _isHoveringDashboard ? 2.5 : 1.5,
                     ),
                   ),
@@ -165,20 +169,20 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.touch_app, size: 16, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.6)),
+                                Icon(Icons.touch_app, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                                 const SizedBox(width: 6),
                                 Text(
                                   "Click to transform your documents into editable PPTX",
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Theme.of(context).colorScheme.onBackground.withOpacity(0.6),
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                   ),
                                 ),
                               ],
@@ -187,7 +191,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -196,7 +200,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                                   fontSize: 11,
                                   fontFamily: 'Consolas',
                                   fontWeight: FontWeight.w500,
-                                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.6),
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 ),
                               ),
                             ),
@@ -213,14 +217,18 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutBack,
-                            transform: Matrix4.identity()..scale(_isHoveringDashboard ? 1.1 : 1.0),
+                            transform: Matrix4.diagonal3Values(
+                              _isHoveringDashboard ? 1.1 : 1.0,
+                              _isHoveringDashboard ? 1.1 : 1.0,
+                              1.0,
+                            ),
                             transformAlignment: Alignment.center,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Theme.of(context).colorScheme.background,
+                              color: Theme.of(context).colorScheme.surface,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(_isHoveringDashboard ? 0.3 : 0.1),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 0.3 : 0.1),
                                   blurRadius: _isHoveringDashboard ? 15 : 5,
                                   spreadRadius: 2,
                                 )
@@ -331,9 +339,9 @@ class _CircleNodeState extends State<_CircleNode> with SingleTickerProviderState
             height: 70,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: widget.color.withOpacity(0.12),
+              color: widget.color.withValues(alpha: 0.12),
             ),
-            child: Icon(widget.icon, size: 32, color: widget.color.withOpacity(0.9)),
+            child: Icon(widget.icon, size: 32, color: widget.color.withValues(alpha: 0.9)),
           ),
         ),
         const SizedBox(height: 10),
@@ -361,7 +369,7 @@ class _ArrowLine extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Container(width: 50, height: 2, color: Colors.grey.withOpacity(0.2)),
+            Container(width: 50, height: 2, color: Colors.grey.withValues(alpha: 0.2)),
             AnimatedBuilder(
               animation: animation,
               builder: (context, child) {
