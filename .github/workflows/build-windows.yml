@@ -1,0 +1,37 @@
+name: Build Windows Flutter App
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # 允许在 GitHub 网页上手动触发
+
+jobs:
+  build:
+    # 微软提供的免费云端 Windows 虚拟机
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        working-directory: ./windows_app
+        run: flutter pub get
+
+      - name: Build Windows executable
+        working-directory: ./windows_app
+        run: flutter build windows
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: SlideRev-Windows-Build
+          path: windows_app/build/windows/x64/runner/Release/
