@@ -31,9 +31,14 @@ class MainDesktopWindow extends StatefulWidget {
   State<MainDesktopWindow> createState() => _MainDesktopWindowState();
 }
 
+enum AppState { dashboard, processing, finished }
+
 class _MainDesktopWindowState extends State<MainDesktopWindow> {
   bool _isHoveringDashboard = false;
   String? _selectedFilePath;
+  AppState _appState = AppState.dashboard;
+  String _statusText = "Initializing AI Engine...";
+  double _progress = 0.0;
 
   Future<void> _onImportPdf() async {
     FilePickerResult? result = await FilePicker.pickFiles(
@@ -45,214 +50,409 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
       if (!mounted) return;
       setState(() {
         _selectedFilePath = result.files.single.path;
+        _appState = AppState.processing;
       });
-      // 成功选择文件后，可以跳转到编辑页面，或显示文件路径
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Selected file: $_selectedFilePath')),
-      );
+
+      // 模拟 AI 处理流程
+      await _simulateProcessing();
     }
+  }
+
+  Future<void> _simulateProcessing() async {
+    final stages = [
+      {"text": "Analyzing PDF Structure...", "progress": 0.1},
+      {"text": "Extracting Layout Nodes...", "progress": 0.3},
+      {"text": "Running ONNX OCR Engine...", "progress": 0.5},
+      {"text": "Removing Background Noise...", "progress": 0.7},
+      {"text": "Vectorizing UI Elements...", "progress": 0.85},
+      {"text": "Generating Editable PPTX...", "progress": 0.95},
+      {"text": "Finalizing Document...", "progress": 1.0},
+    ];
+
+    for (var stage in stages) {
+      if (!mounted) return;
+      setState(() {
+        _statusText = stage["text"] as String;
+        _progress = stage["progress"] as double;
+      });
+      await Future.delayed(const Duration(milliseconds: 800));
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _appState = AppState.finished;
+    });
+  }
+
+  void _reset() {
+    setState(() {
+      _appState = AppState.dashboard;
+      _selectedFilePath = null;
+      _progress = 0.0;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Center(
-        child: Column(
-          children: [
-            const Spacer(),
-            // 标题区
-            Column(
-              children: [
-                const Text(
-                  "SlideRev...",
-                  style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Column(
-                  children: [
-                    Text(
-                      "Professional AI Slide Reconstructor",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Unlock Your NotebookLM Citations & AI Images",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    SizedBox(
-                      width: 540,
-                      child: Text(
-                        "Transform flat PDFs and AI-generated snapshots back to professional, fully editable PPTX slides.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Seamlessly convert screenshots, mobile captures, and citations into vectorized PPTX elements.",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+      body: Stack(
+        children: [
+          // 背景装饰
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.03,
+              child: CustomPaint(painter: GridPainter()),
             ),
-            const SizedBox(height: 40),
+          ),
 
-            // 核心引导卡片
-            MouseRegion(
-              onEnter: (_) => setState(() => _isHoveringDashboard = true),
-              onExit: (_) => setState(() => _isHoveringDashboard = false),
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: _onImportPdf,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                  width: 640,
-                  height: 440,
-                  transform: Matrix4.diagonal3Values(
-                    _isHoveringDashboard ? 1.02 : 1.0,
-                    _isHoveringDashboard ? 1.02 : 1.0,
-                    1.0,
+          if (_appState == AppState.dashboard)
+            _buildDashboard()
+          else if (_appState == AppState.processing)
+            _buildProcessingView()
+          else
+            _buildFinishedView(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboard() {
+    return Center(
+      child: Column(
+        children: [
+          const Spacer(),
+          // 标题区
+          _buildHeader(),
+          const SizedBox(height: 40),
+
+          // 核心引导卡片
+          MouseRegion(
+            onEnter: (_) => setState(() => _isHoveringDashboard = true),
+            onExit: (_) => setState(() => _isHoveringDashboard = false),
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: _onImportPdf,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                width: 640,
+                height: 440,
+                transform: Matrix4.diagonal3Values(
+                  _isHoveringDashboard ? 1.02 : 1.0,
+                  _isHoveringDashboard ? 1.02 : 1.0,
+                  1.0,
+                ),
+                transformAlignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 0.06 : 0.03),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 1.0 : 0.2),
+                    width: _isHoveringDashboard ? 2.5 : 1.5,
                   ),
-                  transformAlignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 0.06 : 0.03),
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 1.0 : 0.2),
-                      width: _isHoveringDashboard ? 2.5 : 1.5,
+                ),
+                child: Stack(
+                  children: [
+                    // 顶部视觉连线动画
+                    Positioned(
+                      top: 40,
+                      left: 0,
+                      right: 0,
+                      child: AnimatedOpacity(
+                        opacity: _isHoveringDashboard ? 0.4 : 0.6,
+                        duration: const Duration(milliseconds: 300),
+                        child: Transform.scale(
+                          scale: 0.9,
+                          child: const GraphicProcessView(),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Stack(
-                    children: [
-                      // 顶部视觉连线动画
-                      Positioned(
-                        top: 40,
-                        left: 0,
-                        right: 0,
-                        child: AnimatedOpacity(
-                          opacity: _isHoveringDashboard ? 0.4 : 0.6,
-                          duration: const Duration(milliseconds: 300),
-                          child: Transform.scale(
-                            scale: 0.9,
-                            child: const GraphicProcessView(),
-                          ),
-                        ),
-                      ),
 
-                      // 中间文字描述
-                      Positioned(
-                        bottom: 120,
-                        left: 0,
-                        right: 0,
-                        child: Column(
-                          children: [
-                            Text(
-                              "Import PDF, Images or NotebookLM Citations",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.touch_app, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Click to transform your documents into editable PPTX",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                "Supported: PDF, PNG, JPG, JPEG, HEIC, TIFF",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontFamily: 'Consolas',
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    // 中间文字描述
+                    _buildDashboardText(),
 
-                      // 底部大圆圈 Plus 图标
-                      Positioned(
-                        bottom: 30,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutBack,
-                            transform: Matrix4.diagonal3Values(
-                              _isHoveringDashboard ? 1.1 : 1.0,
-                              _isHoveringDashboard ? 1.1 : 1.0,
-                              1.0,
-                            ),
-                            transformAlignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Theme.of(context).colorScheme.surface,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 0.3 : 0.1),
-                                  blurRadius: _isHoveringDashboard ? 15 : 5,
-                                  spreadRadius: 2,
-                                )
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.add_circle,
-                              size: 80,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    // 底部大圆圈 Plus 图标
+                    _buildPlusIcon(),
+                  ],
                 ),
               ),
             ),
-            const Spacer(),
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        const Text(
+          "SlideRev...",
+          style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Column(
+          children: [
+            Text(
+              "Professional AI Slide Reconstructor",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Unlock Your NotebookLM Citations & AI Images",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 540,
+              child: Text(
+                "Transform flat PDFs and AI-generated snapshots back to professional, fully editable PPTX slides.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Seamlessly convert screenshots, mobile captures, and citations into vectorized PPTX elements.",
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardText() {
+    return Positioned(
+      bottom: 120,
+      left: 0,
+      right: 0,
+      child: Column(
+        children: [
+          Text(
+            "Import PDF, Images or NotebookLM Citations",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.touch_app, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+              const SizedBox(width: 6),
+              Text(
+                "Click to transform your documents into editable PPTX",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              "Supported: PDF, PNG, JPG, JPEG, HEIC, TIFF",
+              style: TextStyle(
+                fontSize: 11,
+                fontFamily: 'Consolas',
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlusIcon() {
+    return Positioned(
+      bottom: 30,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
+          transform: Matrix4.diagonal3Values(
+            _isHoveringDashboard ? 1.1 : 1.0,
+            _isHoveringDashboard ? 1.1 : 1.0,
+            1.0,
+          ),
+          transformAlignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 0.3 : 0.1),
+                blurRadius: _isHoveringDashboard ? 15 : 5,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          child: Icon(
+            Icons.add_circle,
+            size: 80,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProcessingView() {
+    return Center(
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 40,
+              offset: const Offset(0, 20),
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(strokeWidth: 3),
+            const SizedBox(height: 32),
+            Text(
+              _statusText,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _selectedFilePath?.split('\\').last ?? "File",
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+            ),
+            const SizedBox(height: 32),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: _progress,
+                minHeight: 8,
+                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildFinishedView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.check_circle, size: 120, color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            "Transformation Complete!",
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Your editable PPTX is ready for refinement.",
+            style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+          ),
+          const SizedBox(height: 48),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildActionButton(
+                icon: Icons.file_open,
+                label: "Open PPTX",
+                onPressed: () {},
+                primary: true,
+              ),
+              const SizedBox(width: 16),
+              _buildActionButton(
+                icon: Icons.refresh,
+                label: "Start New",
+                onPressed: _reset,
+                primary: false,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onPressed, bool primary = false}) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        backgroundColor: primary ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
+        foregroundColor: primary ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary,
+        side: BorderSide(color: Theme.of(context).colorScheme.primary),
+        shape: RoundedRectangle(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+}
+
+class GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 0.5;
+
+    for (double i = 0; i < size.width; i += 40) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+    for (double i = 0; i < size.height; i += 40) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
 }
 
 // 模拟原生的三个圆圈动画连接图
