@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
 import 'dart:io';
+import 'dart:convert';
 
 class PptxPageData {
   final Uint8List backgroundImage;
@@ -25,8 +26,11 @@ class PptxGenerator {
     final archive = Archive();
 
     // 1. 基础骨架
-    archive.addFile(ArchiveFile('[Content_Types].xml', 0, _getContentTypesXml(pages.length).codeUnits));
-    archive.addFile(ArchiveFile('_rels/.rels', 0, _getRelsXml().codeUnits));
+    final contentTypes = utf8.encode(_getContentTypesXml(pages.length));
+    archive.addFile(ArchiveFile('[Content_Types].xml', contentTypes.length, contentTypes));
+    
+    final rels = utf8.encode(_getRelsXml());
+    archive.addFile(ArchiveFile('_rels/.rels', rels.length, rels));
     
     // 计算全局最大尺寸 (与 Mac 版逻辑对齐)
     double maxW = 720.0;
@@ -38,8 +42,11 @@ class PptxGenerator {
     final cxEMU = (maxW * EMU_PER_PT).toInt();
     final cyEMU = (maxH * EMU_PER_PT).toInt();
 
-    archive.addFile(ArchiveFile('ppt/presentation.xml', 0, _getPresentationXml(pages.length, cxEMU, cyEMU).codeUnits));
-    archive.addFile(ArchiveFile('ppt/_rels/presentation.xml.rels', 0, _getPresentationRelsXml(pages.length).codeUnits));
+    final presXml = utf8.encode(_getPresentationXml(pages.length, cxEMU, cyEMU));
+    archive.addFile(ArchiveFile('ppt/presentation.xml', presXml.length, presXml));
+    
+    final presRels = utf8.encode(_getPresentationRelsXml(pages.length));
+    archive.addFile(ArchiveFile('ppt/_rels/presentation.xml.rels', presRels.length, presRels));
 
     // 2. 遍历生成每一页内容
     for (int i = 0; i < pages.length; i++) {
@@ -51,10 +58,12 @@ class PptxGenerator {
       archive.addFile(ArchiveFile('ppt/media/$imgName', page.backgroundImage.length, page.backgroundImage));
 
       // B. Slide 关系 (指向背景图)
-      archive.addFile(ArchiveFile('ppt/slides/_rels/slide$pageIndex.xml.rels', 0, _getSlideRelsXml(imgName).codeUnits));
-
+      final slideRels = utf8.encode(_getSlideRelsXml(imgName));
+      archive.addFile(ArchiveFile('ppt/slides/_rels/slide$pageIndex.xml.rels', slideRels.length, slideRels));
+      
       // C. Slide 内容
-      archive.addFile(ArchiveFile('ppt/slides/slide$pageIndex.xml', 0, _getSlideXml(page, maxW, maxH).codeUnits));
+      final slideXml = utf8.encode(_getSlideXml(page, maxW, maxH));
+      archive.addFile(ArchiveFile('ppt/slides/slide$pageIndex.xml', slideXml.length, slideXml));
     }
 
     final zipEncoder = ZipEncoder();

@@ -16,14 +16,19 @@ class ModelManager {
     final localPath = p.join(tempDir.path, fileName);
     final file = File(localPath);
 
-    // 如果文件已存在，直接返回（生产环境建议增加校验）
-    if (await file.exists()) {
-      return localPath;
-    }
-
     // 复制数据
     final data = await rootBundle.load(assetPath);
     final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+
+    // 如果文件已存在且大小一致，直接返回；否则覆盖写入
+    if (await file.exists()) {
+      final existingSize = await file.length();
+      if (existingSize == bytes.length) {
+        AppLogger.d('ModelManager', 'Cache hit for $fileName (size matches)');
+        return localPath;
+      }
+      AppLogger.w('ModelManager', 'Cache size mismatch for $fileName ($existingSize vs ${bytes.length}). Overwriting...');
+    }
     await file.writeAsBytes(bytes);
 
     return localPath;

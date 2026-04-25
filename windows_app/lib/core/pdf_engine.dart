@@ -1,7 +1,13 @@
 import 'package:pdfx/pdfx.dart';
 
 class PdfEngine {
-  /// 加载并渲染 PDF 文件的某一页为图片
+  Future<int> getPageCount(String filePath) async {
+    final document = await PdfDocument.openFile(filePath);
+    final count = document.pagesCount;
+    await document.close();
+    return count;
+  }
+
   Future<PdfPageImage?> renderPageToImage(String pdfPath, int pageNumber) async {
     final document = await PdfDocument.openFile(pdfPath);
     final page = await document.getPage(pageNumber);
