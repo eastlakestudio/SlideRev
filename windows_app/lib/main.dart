@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'core/vision_ocr_adapter.dart';
@@ -71,8 +72,20 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
       // 1. 初始化模型 (双保险方案：优先文件加载，失败自动降级到内存加载)
       setState(() { _statusText = "Loading AI Models..."; _progress = 0.1; });
       AppLogger.d('Main', 'Step 1: Extracting models to local temp...');
+      
       final ocrModelPath = await ModelManager().getLocalModelPath('assets/models/ocr_model.onnx');
       final lamaModelPath = await ModelManager().getLocalModelPath('assets/models/lama_fp32.onnx');
+      
+      // 简单预检：如果文件过小，说明资产打包有问题
+      final ocrFile = File(ocrModelPath);
+      final lamaFile = File(lamaModelPath);
+      final ocrSize = await ocrFile.length();
+      final lamaSize = await lamaFile.length();
+      AppLogger.d('Main', 'Model check: OCR size=$ocrSize, LaMa size=$lamaSize');
+      
+      if (ocrSize < 1000000 || lamaSize < 100000000) {
+        throw Exception("Model file corrupted: OCR ($ocrSize bytes), LaMa ($lamaSize bytes). Please check CI download logs.");
+      }
       
       final ocrAdapter = VisionOcrAdapter();
       final lamaEngine = LamaInpaintingEngine();
