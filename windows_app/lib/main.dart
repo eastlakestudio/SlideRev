@@ -257,7 +257,7 @@ class GraphicProcessView extends StatelessWidget {
   const GraphicProcessView({super.key});
   @override
   Widget build(BuildContext context) {
-    return const Icon(Icons.AutoFixHigh, size: 120, color: Colors.blueAccent);
+    return const Icon(Icons.auto_fix_high, size: 120, color: Colors.blueAccent);
   }
 }
 
