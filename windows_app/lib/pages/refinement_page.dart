@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'dart:io';
+// import 'dart:io'; // Removed unused import
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../core/pptx_generator.dart';
@@ -8,8 +8,16 @@ import '../core/pdf_generator.dart';
 class RefinementPage extends StatefulWidget {
   final Uint8List imageBytes;
   final List<Map<String, dynamic>> initialNodes;
+  final double width;
+  final double height;
 
-  const RefinementPage({super.key, required this.imageBytes, required this.initialNodes});
+  const RefinementPage({
+    super.key,
+    required this.imageBytes,
+    required this.initialNodes,
+    required this.width,
+    required this.height,
+  });
 
   @override
   State<RefinementPage> createState() => _RefinementPageState();
@@ -57,7 +65,7 @@ class _RefinementPageState extends State<RefinementPage> {
               decoration: BoxDecoration(
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20)],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20)],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -80,7 +88,7 @@ class _RefinementPageState extends State<RefinementPage> {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     border: Border.all(color: Colors.blueAccent, width: 1),
-                                    color: Colors.blueAccent.withOpacity(0.1),
+                                    color: Colors.blueAccent.withValues(alpha: 0.1),
                                   ),
                                 ),
                               );
@@ -137,8 +145,10 @@ class _RefinementPageState extends State<RefinementPage> {
         ],
       ),
     );
+  }
+
   Future<void> _exportPptx() async {
-    String? outputPath = await FilePicker.platform.saveFile(
+    String? outputPath = await FilePicker.saveFile(
       dialogTitle: 'Save PPTX',
       fileName: 'refined_slides.pptx',
       type: FileType.custom,
@@ -148,7 +158,14 @@ class _RefinementPageState extends State<RefinementPage> {
     if (outputPath != null) {
       if (!outputPath.endsWith('.pptx')) outputPath += '.pptx';
       final generator = PptxGenerator();
-      await generator.createPptx(outputPath, _nodes);
+      await generator.createPptx(outputPath, [
+        PptxPageData(
+          backgroundImage: widget.imageBytes,
+          nodes: _nodes,
+          width: widget.width,
+          height: widget.height,
+        ),
+      ]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PPTX Exported: $outputPath')));
       }
@@ -156,7 +173,7 @@ class _RefinementPageState extends State<RefinementPage> {
   }
 
   Future<void> _exportPdf() async {
-    String? outputPath = await FilePicker.platform.saveFile(
+    String? outputPath = await FilePicker.saveFile(
       dialogTitle: 'Save PDF',
       fileName: 'refined_slides.pdf',
       type: FileType.custom,

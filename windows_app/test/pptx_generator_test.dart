@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:windows_app/core/pptx_generator.dart';
 
@@ -14,10 +15,14 @@ void main() {
       }
 
       await generator.createPptx(outputPath, [
-        {
-          'text': 'Test Slide',
-          'rect': [0, 0, 100, 50]
-        }
+        PptxPageData(
+          backgroundImage: Uint8List(0),
+          nodes: [
+            {'text': 'Test Slide', 'rect': [0.0, 0.0, 100.0, 50.0]}
+          ],
+          width: 720,
+          height: 540,
+        )
       ]);
 
       final file = File(outputPath);

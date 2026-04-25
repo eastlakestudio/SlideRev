@@ -5,7 +5,6 @@ import 'core/lama_inpainting_engine.dart';
 import 'core/pdf_engine.dart';
 import 'core/model_manager.dart';
 import 'pages/refinement_page.dart';
-import 'dart:typed_data';
 
 void main() {
   runApp(const SlideRevWindowsApp());
@@ -53,6 +52,10 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
     );
 
     if (result != null && result.files.single.path != null) {
+      setState(() {
+        _selectedFilePath = result.files.single.path;
+        _appState = AppState.processing;
+      });
       if (!mounted) return;
       // 真正开始处理流程
       await _processDocument();
@@ -97,6 +100,8 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
           builder: (context) => RefinementPage(
             imageBytes: pageImage.bytes,
             initialNodes: nodes,
+            width: pageImage.width!.toDouble(),
+            height: pageImage.height!.toDouble(),
           ),
         ),
       );
@@ -139,9 +144,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
           if (_appState == AppState.dashboard)
             _buildDashboard()
           else if (_appState == AppState.processing)
-            _buildProcessingView()
-          else
-            _buildFinishedView(),
+            _buildProcessingView(),
         ],
       ),
     );
@@ -402,52 +405,8 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
     );
   }
 
-  Widget _buildFinishedView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.check_circle, size: 120, color: Theme.of(context).colorScheme.primary),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            "Transformation Complete!",
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Your editable PPTX is ready for refinement.",
-            style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-          ),
-          const SizedBox(height: 48),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildActionButton(
-                icon: Icons.file_open,
-                label: "Open PPTX",
-                onPressed: () {},
-                primary: true,
-              ),
-              const SizedBox(width: 16),
-              _buildActionButton(
-                icon: Icons.refresh,
-                label: "Start New",
-                onPressed: _reset,
-                primary: false,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Removed unused _buildFinishedView
+
 
   Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onPressed, bool primary = false}) {
     return ElevatedButton.icon(
@@ -458,8 +417,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         backgroundColor: primary ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
         foregroundColor: primary ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary,
-        side: BorderSide(color: Theme.of(context).colorScheme.primary),
-        shape: RoundedRectangle(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -482,7 +440,6 @@ class GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 }
 
 // 模拟原生的三个圆圈动画连接图
