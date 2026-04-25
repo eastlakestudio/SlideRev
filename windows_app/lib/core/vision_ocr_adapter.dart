@@ -2,14 +2,30 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:onnxruntime/onnxruntime.dart';
 import 'package:image/image.dart' as img;
+import 'logger.dart';
 
 class VisionOcrAdapter {
   OrtSession? _session;
 
   Future<void> init(String modelPath) async {
+    AppLogger.d('OCR', 'Attempting to initialize OrtSession from file: $modelPath');
     OrtEnv.instance.init();
     final sessionOptions = OrtSessionOptions();
-    _session = OrtSession.fromFile(File(modelPath), sessionOptions);
+    
+    try {
+      _session = OrtSession.fromFile(File(modelPath), sessionOptions);
+      AppLogger.d('OCR', 'Successfully initialized from file (Memory-efficient mode)');
+    } catch (e) {
+      AppLogger.w('OCR', 'File loading failed (likely due to path encoding). Falling back to memory buffer...');
+      try {
+        final modelData = await File(modelPath).readAsBytes();
+        _session = OrtSession.fromBuffer(modelData, sessionOptions);
+        AppLogger.d('OCR', 'Successfully initialized from memory buffer (Compatibility mode)');
+      } catch (e2) {
+        AppLogger.e('OCR', 'All loading methods failed', e2);
+        rethrow;
+      }
+    }
   }
 
   Future<List<Map<String, dynamic>>> recognizeText(Uint8List imageBytes) async {
@@ -48,7 +64,11 @@ class VisionOcrAdapter {
     final inputs = {'x': inputTensor}; // 注意：输入 Key 取决于模型定义，通常为 'x' 或 'input'
     
     final runOptions = OrtRunOptions();
+    AppLogger.d('OCR', 'Running inference with input shape: $inputShape');
+    final startTime = DateTime.now();
     final outputs = await _session!.runAsync(runOptions, inputs);
+    final duration = DateTime.now().difference(startTime).inMilliseconds;
+    AppLogger.d('OCR', 'Inference completed in ${duration}ms');
 
     // 4. 解析结果 (由于 OCR 后处理非常复杂，此处实现逻辑骨架)
     // 实际应包含：DBNet 后处理 (获取概率图 -> 找轮廓 -> 坐标映射)

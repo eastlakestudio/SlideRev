@@ -4,6 +4,7 @@ import 'core/vision_ocr_adapter.dart';
 import 'core/lama_inpainting_engine.dart';
 import 'core/pdf_engine.dart';
 import 'core/model_manager.dart';
+import 'core/logger.dart';
 import 'pages/refinement_page.dart';
 
 void main() {
@@ -56,6 +57,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
         _selectedFilePath = result.files.single.path;
         _appState = AppState.processing;
       });
+      AppLogger.d('Main', 'Selected file: $_selectedFilePath');
       if (!mounted) return;
       // 真正开始处理流程
       await _processDocument();
@@ -66,8 +68,9 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
     if (_selectedFilePath == null) return;
 
     try {
-      // 1. 初始化模型
+      // 1. 初始化模型 (双保险方案：优先文件加载，失败自动降级到内存加载)
       setState(() { _statusText = "Loading AI Models..."; _progress = 0.1; });
+      AppLogger.d('Main', 'Step 1: Extracting models to local temp...');
       final ocrModelPath = await ModelManager().getLocalModelPath('assets/models/ocr_model.onnx');
       final lamaModelPath = await ModelManager().getLocalModelPath('assets/models/lama_fp32.onnx');
       
@@ -109,8 +112,10 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
       setState(() {
         _appState = AppState.dashboard; // 回到首页状态，因为已经 Push 了新页面
       });
+      AppLogger.d('Main', 'Process finished and pushed RefinementPage');
       
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.e('Main', 'Error in _processDocument', e, stack);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Processing Error: $e'), backgroundColor: Colors.red),

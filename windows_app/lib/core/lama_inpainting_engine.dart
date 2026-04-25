@@ -2,13 +2,29 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:onnxruntime/onnxruntime.dart';
 import 'package:image/image.dart' as img;
+import 'logger.dart';
 
 class LamaInpaintingEngine {
   OrtSession? _session;
 
   Future<void> init(String modelPath) async {
+    AppLogger.d('Inpainting', 'Attempting to initialize LaMa from file: $modelPath');
     final sessionOptions = OrtSessionOptions();
-    _session = OrtSession.fromFile(File(modelPath), sessionOptions);
+    
+    try {
+      _session = OrtSession.fromFile(File(modelPath), sessionOptions);
+      AppLogger.d('Inpainting', 'LaMa successfully initialized from file');
+    } catch (e) {
+      AppLogger.w('Inpainting', 'LaMa file loading failed. Falling back to memory...');
+      try {
+        final modelData = await File(modelPath).readAsBytes();
+        _session = OrtSession.fromBuffer(modelData, sessionOptions);
+        AppLogger.d('Inpainting', 'LaMa successfully initialized from memory');
+      } catch (e2) {
+        AppLogger.e('Inpainting', 'LaMa all loading methods failed', e2);
+        rethrow;
+      }
+    }
   }
 
   Future<Uint8List> inpaintImage(Uint8List imageBytes, Uint8List maskBytes) async {
@@ -50,7 +66,11 @@ class LamaInpaintingEngine {
       'mask': OrtValueTensor.createTensorWithDataList(maskData, [1, 1, 512, 512]),
     };
 
+    AppLogger.d('Inpainting', 'Running LaMa inference...');
+    final startTime = DateTime.now();
     final outputs = await _session!.runAsync(OrtRunOptions(), inputs);
+    final duration = DateTime.now().difference(startTime).inMilliseconds;
+    AppLogger.d('Inpainting', 'LaMa inference finished in ${duration}ms');
     if (outputs == null || outputs.isEmpty) return imageBytes;
 
     // 4. Postprocessing: Convert output tensor back to Image
