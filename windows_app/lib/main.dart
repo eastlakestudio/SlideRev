@@ -28,7 +28,7 @@ class SlideRevWindowsApp extends StatelessWidget {
         brightness: Brightness.dark,
         colorSchemeSeed: Colors.blueAccent,
         useMaterial3: true,
-        fontFamily: 'Segoe UI', // Windows default modern font
+        fontFamily: 'Segoe UI',
       ),
       home: const MainDesktopWindow(),
     );
@@ -42,7 +42,7 @@ class MainDesktopWindow extends StatefulWidget {
   State<MainDesktopWindow> createState() => _MainDesktopWindowState();
 }
 
-enum AppState { dashboard, processing, finished }
+enum AppState { dashboard, processing }
 
 class _MainDesktopWindowState extends State<MainDesktopWindow> {
   bool _isHoveringDashboard = false;
@@ -88,9 +88,8 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
     }
   }
 
-  Future<void> _processDocument() async {
+  Future<void> _processPage(int pageNumber) async {
     if (_selectedFilePath == null) return;
-
     try {
       // 1. 初始化模型 (双保险方案：优先文件加载，失败自动降级到内存加载)
       setState(() { _statusText = "Loading AI Models..."; _progress = 0.1; });
@@ -208,18 +207,9 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
           ),
         ),
       );
-
-      setState(() {
-        _appState = AppState.dashboard; // 回到首页状态，因为已经 Push 了新页面
-      });
-      AppLogger.d('Main', 'Process finished and pushed RefinementPage');
-      
+      _reset();
     } catch (e, stack) {
-      AppLogger.e('Main', 'Error in _processDocument', e, stack);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Processing Error: $e'), backgroundColor: Colors.red),
-      );
+      AppLogger.e('Main', 'Page processing failed', e, stack);
       _reset();
     }
   }
@@ -227,7 +217,6 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
   void _reset() {
     setState(() {
       _appState = AppState.dashboard;
-      _selectedFilePath = null;
       _progress = 0.0;
       _processingImageBytes = null;
     });
@@ -239,17 +228,15 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
         children: [
-          // 背景装饰
           Positioned.fill(
             child: Opacity(
               opacity: 0.03,
               child: CustomPaint(painter: GridPainter()),
             ),
           ),
-
           if (_appState == AppState.dashboard)
             _buildDashboard()
-          else if (_appState == AppState.processing)
+          else
             _buildProcessingView(),
         ],
       ),
@@ -261,11 +248,8 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
       child: Column(
         children: [
           const Spacer(),
-          // 标题区
           _buildHeader(),
           const SizedBox(height: 40),
-
-          // 核心引导卡片
           MouseRegion(
             onEnter: (_) => setState(() => _isHoveringDashboard = true),
             onExit: (_) => setState(() => _isHoveringDashboard = false),
@@ -317,8 +301,6 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
 
                     // 中间文字描述
                     _buildDashboardText(),
-
-                    // 底部大圆圈 Plus 图标
                     _buildPlusIcon(),
                   ],
                   ),
@@ -335,103 +317,21 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
   Widget _buildHeader() {
     return Column(
       children: [
-        const Text(
-          "SlideRev...",
-          style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-        ),
+        const Text("SlideRev...", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        Column(
-          children: [
-            Text(
-              "Professional AI Slide Reconstructor",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Unlock Your NotebookLM Citations & AI Images",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              width: 540,
-              child: Text(
-                "Transform flat PDFs and AI-generated snapshots back to professional, fully editable PPTX slides.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "Seamlessly convert screenshots, mobile captures, and citations into vectorized PPTX elements.",
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-            ),
-          ],
-        ),
+        Text("Professional AI Slide Reconstructor", style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.primary)),
       ],
     );
   }
 
   Widget _buildDashboardText() {
     return Positioned(
-      bottom: 120,
-      left: 0,
-      right: 0,
+      bottom: 120, left: 0, right: 0,
       child: Column(
         children: [
-          Text(
-            "Import PDF, Images or NotebookLM Citations",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.touch_app, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-              const SizedBox(width: 6),
-              Text(
-                "Click to transform your documents into editable PPTX",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              "Supported: PDF, PNG, JPG, JPEG, HEIC, TIFF",
-              style: TextStyle(
-                fontSize: 11,
-                fontFamily: 'Consolas',
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ),
+          const Text("Drag & Drop or Click to Import", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text("Supports PDF, Images, and Screenshots", style: TextStyle(fontSize: 14, color: Colors.grey[400])),
         ],
       ),
     );
@@ -439,35 +339,15 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
 
   Widget _buildPlusIcon() {
     return Positioned(
-      bottom: 30,
-      left: 0,
-      right: 0,
+      bottom: 40, left: 0, right: 0,
       child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutBack,
-          transform: Matrix4.diagonal3Values(
-            _isHoveringDashboard ? 1.1 : 1.0,
-            _isHoveringDashboard ? 1.1 : 1.0,
-            1.0,
-          ),
-          transformAlignment: Alignment.center,
+        child: Container(
+          width: 56, height: 56,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Theme.of(context).colorScheme.surface,
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: _isHoveringDashboard ? 0.3 : 0.1),
-                blurRadius: _isHoveringDashboard ? 15 : 5,
-                spreadRadius: 2,
-              )
-            ],
-          ),
-          child: Icon(
-            Icons.add_circle,
-            size: 80,
             color: Theme.of(context).colorScheme.primary,
+            shape: BoxShape.circle,
           ),
+          child: const Icon(Icons.add, size: 32, color: Colors.white),
         ),
       ),
     );
@@ -541,6 +421,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
       ),
     );
   }
+}
 
   // Removed unused _buildFinishedView
 
@@ -587,10 +468,7 @@ Uint8List _maskGenerationTask(Map<String, dynamic> params) {
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 0.5;
-
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.1)..strokeWidth = 1;
     for (double i = 0; i < size.width; i += 40) {
       canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
     }
@@ -598,7 +476,6 @@ class GridPainter extends CustomPainter {
       canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
     }
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

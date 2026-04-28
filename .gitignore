@@ -43,4 +43,4 @@ test_origin_editable.pdfStatus:
 appstore/slidere.md
 appstore/*.png
 test_corrupted.pptx
-windows_app/assets/models/lama_fp32.onnx
+
