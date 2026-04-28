@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
@@ -20,9 +21,6 @@ class PptxPageData {
 
 class PptxGenerator {
   static const int EMU_PER_PT = 12700;
-  // 🚀 核心优化：固定标准画布尺寸 (对标 Mac 版 V10 逻辑)
-  static const double CANVAS_W = 960.0;
-  static const double CANVAS_H = 720.0;
 
   Future<void> createPptx(String outputPath, List<PptxPageData> pages) async {
     final archive = Archive();
@@ -37,9 +35,12 @@ class PptxGenerator {
     addXmlFile('docProps/app.xml', _getAppXml());
     addXmlFile('docProps/core.xml', _getCoreXml());
 
-    // 使用固定画布尺寸
-    final cxEMU = (CANVAS_W * EMU_PER_PT).toInt();
-    final cyEMU = (CANVAS_H * EMU_PER_PT).toInt();
+    // 🚀 页面比例需要和所打开文件的比例完全一致
+    final double canvasW = pages.isNotEmpty ? pages[0].width : 960.0;
+    final double canvasH = pages.isNotEmpty ? pages[0].height : 720.0;
+
+    final cxEMU = (canvasW * EMU_PER_PT).toInt();
+    final cyEMU = (canvasH * EMU_PER_PT).toInt();
 
     addXmlFile('ppt/presentation.xml', _getPresentationXml(pages.length, cxEMU, cyEMU));
     addXmlFile('ppt/_rels/presentation.xml.rels', _getPresentationRelsXml(pages.length));
@@ -55,7 +56,7 @@ class PptxGenerator {
       final imgName = 'image_p$pageIndex.png';
       archive.addFile(ArchiveFile('ppt/media/$imgName', page.backgroundImage.length, page.backgroundImage));
       addXmlFile('ppt/slides/_rels/slide$pageIndex.xml.rels', _getSlideRelsXml(imgName));
-      addXmlFile('ppt/slides/slide$pageIndex.xml', _getSlideXml(page));
+      addXmlFile('ppt/slides/slide$pageIndex.xml', _getSlideXml(page, canvasW, canvasH));
     }
 
     final zipEncoder = ZipEncoder();
@@ -65,16 +66,16 @@ class PptxGenerator {
     }
   }
 
-  String _getSlideXml(PptxPageData page) {
-    // 🚀 核心优化：居中适配缩放
-    final fitScale = (CANVAS_W / page.width < CANVAS_H / page.height) ? CANVAS_W / page.width : CANVAS_H / page.height;
-    final offX = (CANVAS_W - page.width * fitScale) / 2.0;
-    final offY = (CANVAS_H - page.height * fitScale) / 2.0;
+  String _getSlideXml(PptxPageData page, double canvasW, double canvasH) {
+    // 🚀 全比例对齐，消除裁剪偏移
+    final fitScale = 1.0;
+    final offX = 0.0;
+    final offY = 0.0;
 
-    final offX_EMU = (offX * EMU_PER_PT).toInt();
-    final offY_EMU = (offY * EMU_PER_PT).toInt();
-    final extX_EMU = (page.width * fitScale * EMU_PER_PT).toInt();
-    final extY_EMU = (page.height * fitScale * EMU_PER_PT).toInt();
+    final offX_EMU = 0;
+    final offY_EMU = 0;
+    final extX_EMU = (canvasW * EMU_PER_PT).toInt();
+    final extY_EMU = (canvasH * EMU_PER_PT).toInt();
 
     final builder = XmlBuilder();
     builder.processing('xml', 'version="1.0" encoding="UTF-8" standalone="yes"');
@@ -123,12 +124,27 @@ class PptxGenerator {
             final text = node['text'] as String;
             if (text.trim().isEmpty) continue;
 
-            // 🚀 字号计算基于 CANVAS_H 
+            // 🚀 核心优化：利用和前端完全一致的 TextPainter 进行字号拟合
             double fontSize = 12.0;
-            if (node.containsKey('fittingH')) {
-               fontSize = node['fittingH'] * CANVAS_H * 0.85; 
-            } else {
-               fontSize = rect[3] * CANVAS_H * 0.4; 
+            try {
+              final hasFittingH = node.containsKey('fittingH');
+              final double targetH = (hasFittingH ? node['fittingH'] : (node['rawH'] ?? rect[3] / 2.5) * 1.5) * canvasH;
+              final double targetW = rect[2] * canvasW; 
+              
+              const double testSize = 50.0;
+              final textPainter = TextPainter(
+                text: TextSpan(
+                  text: text,
+                  style: const TextStyle(fontSize: testSize, fontFamily: 'Segoe UI'),
+                ),
+                textDirection: TextDirection.ltr,
+              )..layout();
+              
+              final double heightRatio = (targetH * 1.1) / textPainter.height;
+              final double widthRatio = (targetW * 0.85) / textPainter.width;
+              fontSize = testSize * (heightRatio < widthRatio ? heightRatio : widthRatio);
+            } catch (_) {
+              fontSize = (node['rawH'] as double? ?? rect[3]) * canvasH * 0.95;
             }
             if (fontSize < 10) fontSize = 10;
             
@@ -139,7 +155,7 @@ class PptxGenerator {
               else { colorHex = rawColor.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase(); }
             } else if (rawColor is String) { colorHex = rawColor.replaceAll('#', ''); }
 
-            _addTextShape(builder, i + 100, text, rect, CANVAS_W, CANVAS_H, fitScale, offX, offY, fontSize, colorHex);
+            _addTextShape(builder, i + 100, text, node, canvasW, canvasH, fitScale, offX, offY, fontSize, colorHex);
           }
         });
       });
@@ -148,12 +164,22 @@ class PptxGenerator {
     return builder.buildDocument().toXmlString();
   }
 
-  void _addTextShape(XmlBuilder builder, int id, String text, List<double> rect, double canvasW, double canvasH, double fitScale, double offX, double offY, double fontSize, String colorHex) {
+  void _addTextShape(XmlBuilder builder, int id, String text, Map<String, dynamic> node, double canvasW, double canvasH, double fitScale, double offX, double offY, double fontSize, String colorHex) {
+    final rect = node['rect'] as List<double>;
     // 映射坐标到 CANVAS 空间
     final xPt = offX + (rect[0] * (canvasW - offX * 2));
-    final yPt = offY + (rect[1] * (canvasH - offY * 2));
+    final double rawYPt = offY + (rect[1] * (canvasH - offY * 2));
     final wPt = rect[2] * (canvasW - offX * 2);
-    final hPt = rect[3] * (canvasH - offY * 2);
+    final double rawHPt = rect[3] * (canvasH - offY * 2);
+
+    // 使用 fittingH 调整高度
+    double hPt = rawHPt;
+    double yPt = rawYPt;
+    if (node.containsKey('fittingH')) {
+      hPt = (node['fittingH'] as double) * (canvasH - offY * 2);
+      final double hDiff = hPt - rawHPt;
+      yPt = rawYPt - (hDiff / 2);
+    }
 
     final xEMU = (xPt * EMU_PER_PT).toInt();
     final yEMU = (yPt * EMU_PER_PT).toInt();
@@ -176,7 +202,15 @@ class PptxGenerator {
         builder.element('a:prstGeom', nest: () { builder.attribute('prst', 'rect'); builder.element('a:avLst', nest: () {}); });
       });
       builder.element('p:txBody', nest: () {
-        builder.element('a:bodyPr', nest: () { builder.attribute('anchor', 'ctr'); builder.attribute('wrap', 'none'); builder.element('a:spAutoFit', nest: () {}); });
+        builder.element('a:bodyPr', nest: () { 
+          builder.attribute('anchor', 'ctr'); 
+          builder.attribute('wrap', 'none'); 
+          builder.attribute('lIns', '0'); 
+          builder.attribute('tIns', '0'); 
+          builder.attribute('rIns', '0'); 
+          builder.attribute('bIns', '0'); 
+          builder.element('a:noAutofit', nest: () {}); 
+        });
         builder.element('a:lstStyle', nest: () {});
         for (var line in lines) {
           builder.element('a:p', nest: () {

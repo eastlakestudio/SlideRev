@@ -245,11 +245,13 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
 
   Widget _buildDashboard() {
     return Center(
-      child: Column(
-        children: [
-          const Spacer(),
-          _buildHeader(),
-          const SizedBox(height: 40),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 30),
           MouseRegion(
             onEnter: (_) => setState(() => _isHoveringDashboard = true),
             onExit: (_) => setState(() => _isHoveringDashboard = false),
@@ -267,7 +269,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
                   width: 640,
-                  height: 440,
+                  height: 380,
                   transform: Matrix4.diagonal3Values(
                     _isHoveringDashboard ? 1.02 : 1.0,
                     _isHoveringDashboard ? 1.02 : 1.0,
@@ -308,8 +310,8 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
               ),
             ),
           ),
-          const Spacer(),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -326,11 +328,11 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
 
   Widget _buildDashboardText() {
     return Positioned(
-      bottom: 120, left: 0, right: 0,
+      bottom: 135, left: 0, right: 0,
       child: Column(
         children: [
           const Text("Drag & Drop or Click to Import", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 5),
           Text("Supports PDF, Images, and Screenshots", style: TextStyle(fontSize: 14, color: Colors.grey[400])),
         ],
       ),
@@ -339,7 +341,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
 
   Widget _buildPlusIcon() {
     return Positioned(
-      bottom: 40, left: 0, right: 0,
+      bottom: 65, left: 0, right: 0,
       child: Center(
         child: Container(
           width: 56, height: 56,
@@ -425,44 +427,8 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
   // Removed unused _buildFinishedView
 
 
-  // 辅助函数：在后台 Isolate 生成 Mask
-  Future<Uint8List> _generateInpaintMask(Uint8List imageBytes, List<Map<String, dynamic>> nodes, int width, int height) async {
-    // 使用 compute 将任务派发到后台 Isolate，避免阻塞 UI 线程
-    return await compute(_maskGenerationTask, {
-      'nodes': nodes,
-      'width': width,
-      'height': height,
-    });
-  }
 }
 
-// 必须是顶级函数或静态函数才能被 compute 调用
-Uint8List _maskGenerationTask(Map<String, dynamic> params) {
-  final List<Map<String, dynamic>> nodes = params['nodes'];
-  final int width = params['width'];
-  final int height = params['height'];
-
-  final mask = img.Image(width: width, height: height);
-  img.fill(mask, color: img.ColorRgb8(0, 0, 0));
-  
-  for (var node in nodes) {
-    final rect = node['rect'] as List<double>;
-    final x = (rect[0] * width);
-    final y = (rect[1] * height);
-    final w = (rect[2] * width);
-    final h = (rect[3] * height);
-    
-    // 进一步扩大 Mask 范围 (增加到 15 像素) 以确保百分之百覆盖文字边缘，彻底杜绝重影
-    img.fillRect(mask, 
-      x1: (x - 15).toInt().clamp(0, width), 
-      y1: (y - 15).toInt().clamp(0, height), 
-      x2: (x + w + 15).toInt().clamp(0, width), 
-      y2: (y + h + 15).toInt().clamp(0, height), 
-      color: img.ColorRgb8(255, 255, 255)
-    );
-  }
-  return Uint8List.fromList(img.encodePng(mask));
-}
 
 class GridPainter extends CustomPainter {
   @override

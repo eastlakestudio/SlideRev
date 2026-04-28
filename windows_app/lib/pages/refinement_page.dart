@@ -64,6 +64,27 @@ class _RefinementPageState extends State<RefinementPage> {
     _allControllers = widget.pages.map((page) {
       return page.nodes.map((n) => TextEditingController(text: n['text'] ?? "")).toList();
     }).toList();
+    _transformationController.addListener(_onTransformationChanged);
+  }
+
+  void _onTransformationChanged() {
+    final double scale = _transformationController.value.storage[0];
+    if ((scale - _zoom).abs() > 0.01) {
+      setState(() {
+        _zoom = scale.clamp(0.1, 5.0);
+      });
+    }
+  }
+
+  void _updateZoom(double newZoom) {
+    final double targetZoom = newZoom.clamp(0.1, 5.0);
+    setState(() {
+      _zoom = targetZoom;
+    });
+    final double currentScale = _transformationController.value.storage[0];
+    final double scaleRatio = targetZoom / currentScale;
+    _transformationController.value = _transformationController.value.clone()
+      ..scale(scaleRatio, scaleRatio, 1.0);
   }
 
   @override
@@ -153,7 +174,7 @@ class _RefinementPageState extends State<RefinementPage> {
         children: [
           const Icon(Icons.cleaning_services, size: 14, color: Colors.orange),
           const SizedBox(width: 8),
-          const Text("Remove Watermark:", style: TextStyle(fontSize: 11, color: Colors.grey)),
+          const Text("Watermark:", style: TextStyle(fontSize: 11, color: Colors.grey)),
           const SizedBox(width: 4),
           Theme(
             data: Theme.of(context).copyWith(
@@ -162,20 +183,19 @@ class _RefinementPageState extends State<RefinementPage> {
             ),
             child: PopupMenuButton<String>(
               initialValue: _selectedWatermark,
-              tooltip: "Select Watermark to Remove",
+              tooltip: "Select Watermark Keyword",
               offset: const Offset(0, 40),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onSelected: (String val) {
                 setState(() => _selectedWatermark = val);
-                _handleWatermarkRemoval(val);
               },
               child: Row(
                 children: [
-                  Text(_selectedWatermark, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
-                  const Icon(Icons.arrow_drop_down, size: 18, color: Colors.black54),
+                  Text(_selectedWatermark, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black)),
+                  const Icon(Icons.arrow_drop_down, size: 16, color: Colors.black54),
                 ],
               ),
-              itemBuilder: (context) => ["A NotebookLM", "NotebookLM", "Confidential", "DRAFT"]
+              itemBuilder: (context) => ["A NotebookLM", "NotebookLM", "Confidential", "DRAFT", "2026-3-17"]
                   .map((s) => PopupMenuItem(
                         value: s,
                         height: 32,
@@ -184,8 +204,96 @@ class _RefinementPageState extends State<RefinementPage> {
                   .toList(),
             ),
           ),
+          const SizedBox(width: 8),
+          _buildWatermarkActionButton("本页", _handleWatermarkRemovalForCurrentPage),
+          const SizedBox(width: 4),
+          _buildWatermarkActionButton("全部", _handleWatermarkRemovalForAllPages),
         ],
       ),
+    );
+  }
+
+  Widget _buildWatermarkActionButton(String text, VoidCallback onPressed) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+        ),
+        child: Text(text, style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  void _handleWatermarkRemovalForCurrentPage() {
+    final keyword = _selectedWatermark;
+    final page = widget.pages[_currentIndex];
+    final controllers = _allControllers[_currentIndex];
+    
+    List<int> toRemove = [];
+    for (int i = page.nodes.length - 1; i >= 0; i--) {
+      final text = page.nodes[i]['text'] as String;
+      if (text.contains(keyword)) {
+        toRemove.add(i);
+      }
+    }
+
+    if (toRemove.isEmpty) {
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(content: Text('No watermark matching "$keyword" found on this page.'), duration: const Duration(seconds: 1))
+       );
+       return;
+    }
+
+    setState(() {
+      for (var idx in toRemove) {
+        page.nodes.removeAt(idx);
+        controllers[idx].dispose();
+        controllers.removeAt(idx);
+      }
+      _focusedIndex = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Removed ${toRemove.length} watermark nodes from this page.'), backgroundColor: Colors.green),
+    );
+  }
+
+  void _handleWatermarkRemovalForAllPages() {
+    final keyword = _selectedWatermark;
+    int totalRemoved = 0;
+
+    setState(() {
+      for (int p = 0; p < widget.pages.length; p++) {
+        final page = widget.pages[p];
+        final controllers = _allControllers[p];
+        
+        List<int> toRemove = [];
+        for (int i = page.nodes.length - 1; i >= 0; i--) {
+          final text = page.nodes[i]['text'] as String;
+          if (text.contains(keyword)) {
+            toRemove.add(i);
+          }
+        }
+
+        for (var idx in toRemove) {
+          page.nodes.removeAt(idx);
+          if (p == _currentIndex) {
+            controllers[idx].dispose();
+          }
+          controllers.removeAt(idx);
+        }
+        totalRemoved += toRemove.length;
+      }
+      _focusedIndex = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Removed $totalRemoved watermark nodes across all pages.'), backgroundColor: Colors.green),
     );
   }
 
@@ -302,7 +410,7 @@ class _RefinementPageState extends State<RefinementPage> {
 
               return Stack(
                 children: [
-                  Image.memory(bgImage, width: cw, height: ch, fit: BoxFit.fill, key: ValueKey("img_$_currentIndex")),
+                  Image.memory(bgImage, width: cw, height: ch, fit: BoxFit.fill, gaplessPlayback: true, key: ValueKey("img_$_currentIndex")),
                   
                   if (_viewMode == ViewMode.editable && _isTextVisible)
                     Positioned.fill(
@@ -344,10 +452,13 @@ class _RefinementPageState extends State<RefinementPage> {
                           }
 
                           final double fontSize = _calculateFittingFontSize();
+                          final double rawH = rect[3] * ch;
+                          final double uiHeight = (node.containsKey('fittingH') ? (node['fittingH'] as double) : rect[3]) * ch;
+                          final double hDiff = uiHeight - rawH;
+
                           final double uiLeft = rect[0] * cw;
-                          final double uiTop = rect[1] * ch;
+                          final double uiTop = rect[1] * ch - (hDiff / 2);
                           final double uiWidth = rect[2] * cw;
-                          final double uiHeight = rect[3] * ch;
 
                           // if (idx == 0) AppLogger.d('UI', '--- Page $_currentIndex Layout ---');
                           // AppLogger.d('UI', 'Text: "$text"');
@@ -437,11 +548,11 @@ class _RefinementPageState extends State<RefinementPage> {
           const SizedBox(width: 8),
           _buildStatusBarIconButton(Icons.chevron_right, onPressed: () => _changePage(_currentIndex + 1)),
           const SizedBox(width: 16),
-          _buildStatusBarIconButton(Icons.remove_circle_outline, onPressed: () => setState(() => _zoom = (_zoom - 0.1).clamp(0.1, 3.0))),
-          SizedBox(width: 80, child: Slider(value: _zoom, min: 0.1, max: 3.0, onChanged: (v) => setState(() => _zoom = v))),
-          _buildStatusBarIconButton(Icons.add_circle_outline, onPressed: () => setState(() => _zoom = (_zoom + 0.1).clamp(0.1, 3.0))),
+          _buildStatusBarIconButton(Icons.remove_circle_outline, onPressed: () => _updateZoom(_zoom - 0.1)),
+          SizedBox(width: 80, child: Slider(value: _zoom.clamp(0.1, 3.0), min: 0.1, max: 3.0, onChanged: (v) => _updateZoom(v))),
+          _buildStatusBarIconButton(Icons.add_circle_outline, onPressed: () => _updateZoom(_zoom + 0.1)),
           const SizedBox(width: 8),
-          GestureDetector(onTap: () => setState(() => _zoom = 1.0), child: Text("${(_zoom * 100).toInt()}%", style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+          GestureDetector(onTap: () => _updateZoom(1.0), child: Text("${(_zoom * 100).toInt()}%", style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
         ],
       ),
     );

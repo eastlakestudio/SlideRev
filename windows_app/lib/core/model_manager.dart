@@ -29,6 +29,9 @@ class ModelManager {
       }
       AppLogger.w('ModelManager', 'Cache size mismatch for $fileName ($existingSize vs ${bytes.length}). Overwriting...');
     }
+    if (!await file.parent.exists()) {
+      await file.parent.create(recursive: true);
+    }
     await file.writeAsBytes(bytes);
 
     return localPath;
