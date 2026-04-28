@@ -1,282 +1,483 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:image/image.dart' as img;
 import '../core/pptx_generator.dart';
 import '../core/pdf_generator.dart';
-import '../core/pdf_engine.dart';
 import '../core/vision_ocr_adapter.dart';
 import '../core/lama_inpainting_engine.dart';
-import '../core/model_manager.dart';
 import '../core/logger.dart';
-import 'dart:ui' as ui;
+
+class ProcessedPage {
+  final Uint8List originalImage;
+  final Uint8List? inpaintedImage;
+  final List<Map<String, dynamic>> nodes;
+  final double width;
+  final double height;
+
+  ProcessedPage({
+    required this.originalImage,
+    this.inpaintedImage,
+    required this.nodes,
+    required this.width,
+    required this.height,
+  });
+}
 
 class RefinementPage extends StatefulWidget {
-  final String pdfFilePath;
-  final int initialPageNumber;
-  final int totalPageCount;
-  final Uint8List initialImageBytes;
-  final List<Map<String, dynamic>> initialNodes;
-  final double initialWidth;
-  final double initialHeight;
+  final List<ProcessedPage> pages;
+  final String pdfPath;
+  final VisionOcrAdapter ocrAdapter;
+  final LamaInpaintingEngine lamaEngine;
 
   const RefinementPage({
     super.key,
-    required this.pdfFilePath,
-    required this.initialPageNumber,
-    required this.totalPageCount,
-    required this.initialImageBytes,
-    required this.initialNodes,
-    required this.initialWidth,
-    required this.initialHeight,
+    required this.pages,
+    required this.pdfPath,
+    required this.ocrAdapter,
+    required this.lamaEngine,
   });
 
   @override
   State<RefinementPage> createState() => _RefinementPageState();
 }
 
-class _RefinementPageState extends State<RefinementPage> {
-  late List<Map<String, dynamic>> _nodes;
-  late Uint8List _currentImageBytes;
-  late int _currentPage;
-  late double _currentWidth;
-  late double _currentHeight;
+enum ViewMode { original, editable }
 
-  Uint8List? _inpaintedImage;
-  bool _isProcessing = false;
-  bool _showInpainted = false;
-  int? _editingIndex;
+class _RefinementPageState extends State<RefinementPage> {
+  int _currentIndex = 0;
+  ViewMode _viewMode = ViewMode.editable;
+  double _zoom = 1.0;
+  double _ocrThreshold = 0.10;
+  String _selectedWatermark = "A NotebookLM";
+  int? _hoveredIndex;
+  int? _focusedIndex;
+  bool _isTextVisible = true;
+  final TransformationController _transformationController = TransformationController();
+
+  late List<List<TextEditingController>> _allControllers;
 
   @override
   void initState() {
     super.initState();
-    _nodes = List.from(widget.initialNodes);
-    _currentImageBytes = widget.initialImageBytes;
-    _currentPage = widget.initialPageNumber;
-    _currentWidth = widget.initialWidth;
-    _currentHeight = widget.initialHeight;
+    _allControllers = widget.pages.map((page) {
+      return page.nodes.map((n) => TextEditingController(text: n['text'] ?? "")).toList();
+    }).toList();
   }
+
+  @override
+  void dispose() {
+    for (var pageControllers in _allControllers) {
+      for (var c in pageControllers) {
+        c.dispose();
+      }
+    }
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _changePage(int newIndex) {
+    if (newIndex < 0 || newIndex >= widget.pages.length) return;
+    setState(() {
+      _currentIndex = newIndex;
+      _focusedIndex = null;
+    });
+  }
+
+  void _ensureEditable() {
+    if (_viewMode == ViewMode.original) setState(() => _viewMode = ViewMode.editable);
+  }
+
+  ProcessedPage get _currentPage => widget.pages[_currentIndex];
+  List<TextEditingController> get _currentControllers => _allControllers[_currentIndex];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: Row(
-          children: [
-            const Text("SlideRev Workspace", style: TextStyle(fontSize: 16)),
-            const SizedBox(width: 32),
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
-            ),
-            Text("$_currentPage / ${widget.totalPageCount}", style: const TextStyle(fontSize: 14)),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: _currentPage < widget.totalPageCount ? () => _goToPage(_currentPage + 1) : null,
-            ),
-          ],
-        ),
-        actions: [
-          if (_inpaintedImage == null)
-            TextButton.icon(
-              onPressed: _isProcessing ? null : _runInpainting,
-              icon: _isProcessing ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.auto_fix_high, size: 18),
-              label: Text(_isProcessing ? "AI Processing..." : "AI Remove Text"),
-              style: TextButton.styleFrom(foregroundColor: Colors.orangeAccent),
-            ),
-          if (_inpaintedImage != null)
-            Row(
-              children: [
-                const Text("AI Background", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                Switch(
-                  value: _showInpainted,
-                  onChanged: (v) => setState(() => _showInpainted = v),
-                  activeColor: Colors.orangeAccent,
-                ),
-              ],
-            ),
-          const VerticalDivider(width: 32, indent: 12, endIndent: 12),
-          ElevatedButton.icon(
-            onPressed: _exportPptx,
-            icon: const Icon(Icons.file_download),
-            label: const Text("Export PPTX"),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
-          ),
-          const SizedBox(width: 16),
+      backgroundColor: const Color(0xFFF5F5F7),
+      body: Column(
+        children: [
+          _buildTopToolbar(),
+          Expanded(child: _buildCanvasArea()),
+          _buildBottomStatusBar(),
         ],
       ),
-      body: GestureDetector(
-        onTap: () => setState(() => _editingIndex = null),
-        child: Center(
-          child: Container(
-            margin: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 40)],
-            ),
-            child: ClipRRect(
-              child: Stack(
-                children: [
-                  // 底图
-                  Image.memory(
-                    (_showInpainted && _inpaintedImage != null) ? _inpaintedImage! : _currentImageBytes,
-                    fit: BoxFit.contain,
-                  ),
-                  
-                  // 文本编辑层
-                  Positioned.fill(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return Stack(
-                          children: _nodes.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final node = entry.value;
-                            final rect = node['rect'] as List<double>;
-                            final isEditing = _editingIndex == index;
+    );
+  }
 
-                            return Positioned(
-                              left: rect[0] * constraints.maxWidth,
-                              top: rect[1] * constraints.maxHeight,
-                              width: rect[2] * constraints.maxWidth,
-                              height: rect[3] * constraints.maxHeight,
-                              child: isEditing 
-                                ? _buildInlineEditor(index)
-                                : _buildTappableNode(index, node['text']),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-                  ),
+  Widget _buildTopToolbar() {
+    return Container(
+      height: 64, padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.5))),
+      child: Row(
+        children: [
+          IconButton(icon: const Icon(Icons.home_filled, color: Colors.grey), onPressed: () => Navigator.pop(context)),
+          const VerticalDivider(width: 20, indent: 20, endIndent: 20),
+          Container(
+            decoration: BoxDecoration(color: const Color(0xFFE3E3E3), borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.all(2),
+            child: Row(children: [_buildModeTab("Original", ViewMode.original), _buildModeTab("Editable", ViewMode.editable)]),
+          ),
+          const SizedBox(width: 12),
+          _buildWatermarkGroup(),
+          const Spacer(),
+          _buildToolbarTextButton("Reset", Icons.refresh, onPressed: () { 
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restoring original OCR state...')));
+          }),
+          const SizedBox(width: 12),
+          const VerticalDivider(width: 1, indent: 20, endIndent: 20),
+          const SizedBox(width: 12),
+          _buildToolbarToggleButton("Show Text", _isTextVisible ? Icons.visibility : Icons.visibility_off, _isTextVisible, onPressed: () {
+            _ensureEditable();
+            setState(() => _isTextVisible = !_isTextVisible);
+          }),
+          const SizedBox(width: 12),
+          const VerticalDivider(width: 1, indent: 20, endIndent: 20),
+          const SizedBox(width: 12),
+          _buildPrimaryActionButton("Export PPTX", Icons.ios_share, onPressed: _exportPptx),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWatermarkGroup() {
+    return Container(
+      height: 36, padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.04), 
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cleaning_services, size: 14, color: Colors.orange),
+          const SizedBox(width: 8),
+          const Text("Remove Watermark:", style: TextStyle(fontSize: 11, color: Colors.grey)),
+          const SizedBox(width: 4),
+          Theme(
+            data: Theme.of(context).copyWith(
+              hoverColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
+            child: PopupMenuButton<String>(
+              initialValue: _selectedWatermark,
+              tooltip: "Select Watermark to Remove",
+              offset: const Offset(0, 40),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onSelected: (String val) {
+                setState(() => _selectedWatermark = val);
+                _handleWatermarkRemoval(val);
+              },
+              child: Row(
+                children: [
+                  Text(_selectedWatermark, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                  const Icon(Icons.arrow_drop_down, size: 18, color: Colors.black54),
                 ],
               ),
+              itemBuilder: (context) => ["A NotebookLM", "NotebookLM", "Confidential", "DRAFT"]
+                  .map((s) => PopupMenuItem(
+                        value: s,
+                        height: 32,
+                        child: Text(s, style: const TextStyle(fontSize: 12)),
+                      ))
+                  .toList(),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildTappableNode(int index, String text) {
+  void _handleWatermarkRemoval(String keyword) {
+    // 🚀 去水印核心逻辑：节点过滤
+    final page = widget.pages[_currentIndex];
+    final controllers = _allControllers[_currentIndex];
+    
+    // 找出所有匹配的节点索引（倒序删除，防止索引错乱）
+    List<int> toRemove = [];
+    for (int i = page.nodes.length - 1; i >= 0; i--) {
+      final text = page.nodes[i]['text'] as String;
+      if (text.contains(keyword)) {
+        toRemove.add(i);
+      }
+    }
+
+    if (toRemove.isEmpty) {
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(content: Text('No watermark matching "$keyword" found on this page.'), duration: const Duration(seconds: 1))
+       );
+       return;
+    }
+
+    setState(() {
+      for (var idx in toRemove) {
+        page.nodes.removeAt(idx);
+        controllers[idx].dispose();
+        controllers.removeAt(idx);
+      }
+      _focusedIndex = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Removed ${toRemove.length} watermark nodes.'), backgroundColor: Colors.green.withValues(alpha: 0.8)),
+    );
+  }
+
+  Widget _buildModeTab(String label, ViewMode mode) {
+    final isSelected = _viewMode == mode;
     return GestureDetector(
-      onTap: () => setState(() => _editingIndex = index),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.text,
+      onTap: () => setState(() => _viewMode = mode),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))] : null,
+        ),
+        child: Text(label, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400, color: isSelected ? Colors.black : Colors.grey.shade600)),
+      ),
+    );
+  }
+
+  Widget _buildToolbarIconButton(IconData icon, {Color? color, Color? iconColor, VoidCallback? onPressed}) {
+    return GestureDetector(onTap: onPressed, child: Container(width: 32, height: 32, decoration: BoxDecoration(color: color ?? Colors.transparent, borderRadius: BorderRadius.circular(6)), child: Icon(icon, size: 18, color: iconColor ?? Colors.grey.shade700)));
+  }
+
+  Widget _buildToolbarTextButton(String label, IconData icon, {required VoidCallback onPressed}) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        height: 32, padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(8)),
+        child: Row(children: [Icon(icon, size: 14, color: const Color(0xFF007AFF)), const SizedBox(width: 6), Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF007AFF)))]),
+      ),
+    );
+  }
+
+  Widget _buildToolbarToggleButton(String label, IconData icon, bool isActive, {required VoidCallback onPressed}) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        height: 32, width: 100,
+        decoration: BoxDecoration(color: isActive ? const Color(0xFF007AFF) : Colors.black.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(8)),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, size: 14, color: isActive ? Colors.white : Colors.black87), const SizedBox(width: 6), Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isActive ? Colors.white : Colors.black87))]),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryActionButton(String label, IconData icon, {VoidCallback? onPressed}) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        height: 32, width: 100,
+        decoration: BoxDecoration(color: const Color(0xFF007AFF), borderRadius: BorderRadius.circular(8)),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, size: 14, color: Colors.white), const SizedBox(width: 6), Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))]),
+      ),
+    );
+  }
+
+  Widget _buildCanvasArea() {
+    return InteractiveViewer(
+      key: const ValueKey("main_viewer"),
+      minScale: 0.1, maxScale: 5.0, scaleEnabled: true,
+      boundaryMargin: const EdgeInsets.all(1000),
+      transformationController: _transformationController,
+      child: Center(
         child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 0.5),
-            color: Colors.blueAccent.withValues(alpha: 0.05),
-          ),
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Text(
-            text,
-            style: const TextStyle(color: Colors.white, fontSize: 10, overflow: TextOverflow.ellipsis),
+          margin: const EdgeInsets.all(10), // 缩小边距，让图片显示更大
+          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 10))]),
+          child: AspectRatio(
+            aspectRatio: _currentPage.width / _currentPage.height,
+            child: LayoutBuilder(builder: (context, constraints) {
+              final cw = constraints.maxWidth;
+              final ch = constraints.maxHeight;
+              
+              final bgImage = (_viewMode == ViewMode.editable && _currentPage.inpaintedImage != null) 
+                  ? _currentPage.inpaintedImage! : _currentPage.originalImage;
+              
+              if (_viewMode == ViewMode.editable) {
+                AppLogger.d('UI', 'Canvas build: Using ${_currentPage.inpaintedImage != null ? "INPAINTED" : "ORIGINAL"} image (Bytes: ${bgImage.length})');
+              }
+
+              return Stack(
+                children: [
+                  Image.memory(bgImage, width: cw, height: ch, fit: BoxFit.fill, key: ValueKey("img_$_currentIndex")),
+                  
+                  if (_viewMode == ViewMode.editable && _isTextVisible)
+                    Positioned.fill(
+                      child: Stack(
+                        key: ValueKey("nodes_$_currentIndex"),
+                        children: List.generate(_currentPage.nodes.length, (idx) {
+                          final node = _currentPage.nodes[idx];
+                          final rect = node['rect'] as List<double>;
+                          final text = node['text'] as String;
+                          final currentText = _currentControllers[idx].text;
+                          final textColor = Color(node['color'] as int? ?? 0xFF000000);
+                          final isFocused = _focusedIndex == idx;
+                          final isHovered = _hoveredIndex == idx;
+
+                          // 🚀 使用 OCR 计算出的“黄金高度” (fittingH) 进行拟合
+                          double _calculateFittingFontSize() {
+                            final hasFittingH = node.containsKey('fittingH');
+                            // 如果有黄金高度，直接用它；否则用原始核心高度的 1.5 倍作为 fallback
+                            final double targetH = (hasFittingH ? node['fittingH'] : (node['rawH'] ?? rect[3] / 2.5) * 1.5) * ch;
+                            final double targetW = rect[2] * cw; 
+                            
+                            const double testSize = 50.0;
+                            final textPainter = TextPainter(
+                              text: TextSpan(
+                                text: currentText,
+                                style: TextStyle(fontSize: testSize, fontFamily: 'Segoe UI'),
+                              ),
+                              textDirection: TextDirection.ltr,
+                            )..layout();
+                            
+                            // 补偿系数调至 1.1 (更保守)
+                            final double heightRatio = (targetH * 1.1) / textPainter.height;
+                            final double widthRatio = (targetW * 0.85) / textPainter.width;
+                            
+                            final double finalSize = testSize * (heightRatio < widthRatio ? heightRatio : widthRatio) * 1.0;
+                            
+                            
+                            return finalSize;
+                          }
+
+                          final double fontSize = _calculateFittingFontSize();
+                          final double uiLeft = rect[0] * cw;
+                          final double uiTop = rect[1] * ch;
+                          final double uiWidth = rect[2] * cw;
+                          final double uiHeight = rect[3] * ch;
+
+                          // if (idx == 0) AppLogger.d('UI', '--- Page $_currentIndex Layout ---');
+                          // AppLogger.d('UI', 'Text: "$text"');
+                          // AppLogger.d('UI', '  - UI Pos: [L:${uiLeft.toStringAsFixed(1)}, T:${uiTop.toStringAsFixed(1)}, W:${uiWidth.toStringAsFixed(1)}, H:${uiHeight.toStringAsFixed(1)}]');
+                          // AppLogger.d('UI', '  - FontSize: ${fontSize.toStringAsFixed(1)}');
+                          
+                          if (text.contains("复合风险")) {
+                            AppLogger.d('TRACE', '>>> TRACING UI: "复合风险"');
+                            AppLogger.d('TRACE', '  - UI Pos: [L:${uiLeft.toStringAsFixed(1)}, T:${uiTop.toStringAsFixed(1)}, W:${uiWidth.toStringAsFixed(1)}, H:${uiHeight.toStringAsFixed(1)}]');
+                            AppLogger.d('TRACE', '  - FontSize: ${fontSize.toStringAsFixed(1)}');
+                          }
+
+                          final controller = _currentControllers[idx];
+
+                          return Positioned(
+                            left: uiLeft, top: uiTop, width: uiWidth, height: uiHeight,
+                            child: MouseRegion(
+                              onEnter: (_) => setState(() => _hoveredIndex = idx),
+                              onExit: (_) => setState(() => _hoveredIndex = null),
+                              child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: isFocused 
+                                          ? const Color(0xFF007AFF) 
+                                          : (isHovered ? const Color(0xFF007AFF).withValues(alpha: 0.3) : Colors.transparent),
+                                      width: isFocused ? 1.0 : 0.5,
+                                    ),
+                                    color: isFocused 
+                                        ? Colors.white.withValues(alpha: 0.8) 
+                                        : (isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                  child: Center(
+                                    child: TextField(
+                                      controller: controller,
+                                      maxLines: 1,
+                                      expands: false,
+                                      textAlign: TextAlign.center,
+                                      textAlignVertical: TextAlignVertical.center,
+                                      style: TextStyle(
+                                        fontSize: fontSize, 
+                                        color: textColor.withValues(alpha: isFocused ? 1.0 : 0.9), 
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none, 
+                                        contentPadding: EdgeInsets.zero, 
+                                        isDense: true,
+                                      ),
+                                      onChanged: (val) => _currentPage.nodes[idx]['text'] = val,
+                                      onTap: () => setState(() => _focusedIndex = idx),
+                                    ),
+                                  ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                ],
+              );
+            }),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInlineEditor(int index) {
+  Widget _buildBottomStatusBar() {
     return Container(
-      color: Colors.blueAccent.withValues(alpha: 0.9),
-      child: TextFormField(
-        initialValue: _nodes[index]['text'],
-        autofocus: true,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-          isDense: true,
-        ),
-        onChanged: (val) => _nodes[index]['text'] = val,
-        onFieldSubmitted: (_) => setState(() => _editingIndex = null),
+      height: 48, padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.5))),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_outline, size: 14, color: Colors.grey),
+          const SizedBox(width: 8),
+          const Text("SlideRev v0.9.6.21 Ready", style: TextStyle(fontSize: 11, color: Colors.grey)),
+          const Spacer(),
+          const Icon(Icons.auto_fix_normal, size: 14, color: Colors.grey),
+          const SizedBox(width: 4),
+          const Text("OCR High Sensitivity Active", style: TextStyle(fontSize: 10, color: Colors.grey)),
+          const VerticalDivider(width: 32, indent: 12, endIndent: 12),
+          const SizedBox(width: 16),
+          _buildStatusBarIconButton(Icons.chevron_left, onPressed: () => _changePage(_currentIndex - 1)),
+          const SizedBox(width: 8),
+          Text("${_currentIndex + 1} / ${widget.pages.length}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+          const SizedBox(width: 8),
+          _buildStatusBarIconButton(Icons.chevron_right, onPressed: () => _changePage(_currentIndex + 1)),
+          const SizedBox(width: 16),
+          _buildStatusBarIconButton(Icons.remove_circle_outline, onPressed: () => setState(() => _zoom = (_zoom - 0.1).clamp(0.1, 3.0))),
+          SizedBox(width: 80, child: Slider(value: _zoom, min: 0.1, max: 3.0, onChanged: (v) => setState(() => _zoom = v))),
+          _buildStatusBarIconButton(Icons.add_circle_outline, onPressed: () => setState(() => _zoom = (_zoom + 0.1).clamp(0.1, 3.0))),
+          const SizedBox(width: 8),
+          GestureDetector(onTap: () => setState(() => _zoom = 1.0), child: Text("${(_zoom * 100).toInt()}%", style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+        ],
       ),
     );
   }
 
-  Future<void> _goToPage(int pageNumber) async {
-    setState(() => _isProcessing = true);
-    try {
-      final pdfEngine = PdfEngine();
-      final pageImage = await pdfEngine.renderPageToImage(widget.pdfFilePath, pageNumber);
-      if (pageImage == null) return;
-
-      final ocrModelPath = await ModelManager().getLocalModelPath('assets/models/ocr_model.onnx');
-      final ocrAdapter = VisionOcrAdapter();
-      await ocrAdapter.init(ocrModelPath);
-      final nodes = await ocrAdapter.recognizeText(pageImage.bytes);
-
-      setState(() {
-        _currentPage = pageNumber;
-        _currentImageBytes = pageImage.bytes;
-        _currentWidth = pageImage.width!.toDouble();
-        _currentHeight = pageImage.height!.toDouble();
-        _nodes = nodes;
-        _inpaintedImage = null;
-        _showInpainted = false;
-        _isProcessing = false;
-        _editingIndex = null;
-      });
-    } catch (e) {
-      AppLogger.e('Workspace', 'Failed to switch page', e);
-      setState(() => _isProcessing = false);
-    }
-  }
-
-  Future<void> _runInpainting() async {
-    setState(() => _isProcessing = true);
-    try {
-      final maskBytes = await _generateMask();
-      final modelPath = await ModelManager().getLocalModelPath('assets/models/lama_fp32.onnx');
-      final lama = LamaInpaintingEngine();
-      await lama.init(modelPath);
-      final result = await lama.inpaintImage(_currentImageBytes, maskBytes);
-      
-      setState(() {
-        _inpaintedImage = result;
-        _showInpainted = true;
-        _isProcessing = false;
-      });
-    } catch (e) {
-      AppLogger.e('Workspace', 'Inpainting failed', e);
-      setState(() => _isProcessing = false);
-    }
-  }
-
-  Future<Uint8List> _generateMask() async {
-    final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(recorder, ui.Rect.fromLTWH(0, 0, 512, 512));
-    canvas.drawRect(ui.Rect.fromLTWH(0, 0, 512, 512), ui.Paint()..color = Colors.black);
-    final paint = ui.Paint()..color = Colors.white;
-    for (var node in _nodes) {
-      final rect = node['rect'] as List<double>;
-      canvas.drawRect(ui.Rect.fromLTWH(rect[0] * 512, rect[1] * 512, rect[2] * 512, rect[3] * 512), paint);
-    }
-    final img = await recorder.endRecording().toImage(512, 512);
-    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
+  Widget _buildStatusBarIconButton(IconData icon, {VoidCallback? onPressed}) {
+    return GestureDetector(onTap: onPressed, child: Container(width: 24, height: 24, decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(4)), child: Icon(icon, size: 14, color: Colors.grey.shade700)));
   }
 
   Future<void> _exportPptx() async {
-    String? outputPath = await FilePicker.saveFile(
-      dialogTitle: 'Save PPTX',
-      fileName: 'refined_slides.pptx',
-      type: FileType.custom,
-      allowedExtensions: ['pptx'],
-    );
+    final originalName = p.basenameWithoutExtension(widget.pdfPath);
+    final defaultName = "$originalName.pptx";
+    String? outputPath = await FilePicker.saveFile(dialogTitle: 'Save PPTX', fileName: defaultName, type: FileType.custom, allowedExtensions: ['pptx']);
     if (outputPath != null) {
       if (!outputPath.endsWith('.pptx')) outputPath += '.pptx';
       final generator = PptxGenerator();
-      await generator.createPptx(outputPath, [
-        PptxPageData(
-          backgroundImage: _inpaintedImage ?? _currentImageBytes,
-          nodes: _nodes,
-          width: _currentWidth,
-          height: _currentHeight,
-        ),
-      ]);
+      final pagesData = widget.pages.map((p) => PptxPageData(
+        backgroundImage: p.inpaintedImage ?? p.originalImage, 
+        nodes: p.nodes, 
+        width: p.width, 
+        height: p.height
+      )).toList();
+      await generator.createPptx(outputPath, pagesData);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PPTX Exported: $outputPath')));
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    final originalName = p.basenameWithoutExtension(widget.pdfPath);
+    final defaultName = "${originalName}_Refined.pdf";
+    String? outputPath = await FilePicker.saveFile(dialogTitle: 'Save PDF', fileName: defaultName, type: FileType.custom, allowedExtensions: ['pdf']);
+    if (outputPath != null) {
+      if (!outputPath.endsWith('.pdf')) outputPath += '.pdf';
+      final generator = PdfGenerator();
+      await generator.createPdf(outputPath, _currentPage.originalImage, _currentPage.nodes);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PDF Exported: $outputPath')));
     }
   }
 }

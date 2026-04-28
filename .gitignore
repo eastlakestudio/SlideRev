@@ -7,6 +7,7 @@ SlideRev v*.app/
 build_app/
 
 # Large ML Models & Environments
+windows_app/assets/models/
 # 3rd/ Dependency Tools (Dynamically Downloaded)
 3rd/
 temp_slides/
@@ -41,3 +42,5 @@ debug_rels.xml
 test_origin_editable.pdfStatus:
 appstore/slidere.md
 appstore/*.png
+test_corrupted.pptx
+windows_app/assets/models/lama_fp32.onnx
