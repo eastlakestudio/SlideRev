@@ -87,11 +87,12 @@ class WatermarkRemover {
     await lama.init(modelPath);
 
     try {
-      final result = await lama.inpaintImage(imageBytes, maskBytes);
+      final result = await lama.inpaint(imageBytes, maskBytes);
+      if (result == null) throw Exception("Inpainting failed");
       AppLogger.d(_tag, 'LaMa inpainting complete for pattern "$pattern"');
       return result;
     } finally {
-      lama.dispose();
+      // Engine handles its own resources
     }
   }
 
@@ -155,14 +156,15 @@ class WatermarkRemover {
     await lama.init(modelPath);
 
     try {
-      final repaired512 = await lama.inpaintImage(imageBytes, maskBytes);
+      final repaired512 = await lama.inpaint(imageBytes, maskBytes);
+      if (repaired512 == null) throw Exception("Inpainting failed");
       return blendBackToOriginalSize(
         originalBytes: imageBytes,
         repairedBytes: repaired512,
         maskBytes: maskBytes,
       );
     } finally {
-      lama.dispose();
+      // Engine handles its own resources
     }
   }
 }

@@ -25,6 +25,10 @@ curl.exe -k -L -o "$modelsDir/ocr_rec.onnx" "$($proxyPrefix)https://raw.githubus
 Write-Host "Downloading OCR Dictionary..." -ForegroundColor Cyan
 curl.exe -k -L -o "$modelsDir/ppocr_keys_v1.txt" "$($proxyPrefix)https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/release/2.6/ppocr/utils/ppocr_keys_v1.txt"
 
+# 4. 下载 LaMa 模型
+Write-Host "Downloading LaMa ONNX Model (~208MB)..." -ForegroundColor Cyan
+curl.exe -k -L -o "$modelsDir/lama_fp32.onnx" "https://huggingface.co/Carve/LaMa-ONNX/resolve/main/lama_fp32.onnx?download=true"
+
 Write-Host "`nFinal Verification:" -ForegroundColor Yellow
 $files = Get-ChildItem $modelsDir
 foreach ($file in $files) {

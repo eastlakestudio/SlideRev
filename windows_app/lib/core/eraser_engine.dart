@@ -95,7 +95,8 @@ class EraserEngine {
     await lama.init(modelPath);
 
     try {
-      final repaired512 = await lama.inpaintImage(imageBytes, maskBytes);
+      final repaired512 = await lama.inpaint(imageBytes, maskBytes);
+      if (repaired512 == null) throw Exception("Inpainting failed");
       final result = await _blendBack(
         originalBytes: imageBytes,
         repairedBytes: repaired512,
@@ -105,7 +106,7 @@ class EraserEngine {
       _committedPatches.clear();
       return result;
     } finally {
-      lama.dispose();
+      // Engine handles its own resources
     }
   }
 

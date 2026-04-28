@@ -88,7 +88,7 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
     }
   }
 
-  Future<void> _processPage(int pageNumber) async {
+  Future<void> _processDocument() async {
     if (_selectedFilePath == null) return;
     try {
       // 1. 初始化模型 (双保险方案：优先文件加载，失败自动降级到内存加载)
@@ -421,7 +421,6 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
       ),
     );
   }
-}
 
   // Removed unused _buildFinishedView
 

@@ -184,7 +184,7 @@ class _RefinementPageState extends State<RefinementPage> {
                   .toList(),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
