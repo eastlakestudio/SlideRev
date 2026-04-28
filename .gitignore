@@ -44,3 +44,4 @@ appstore/slidere.md
 appstore/*.png
 test_corrupted.pptx
 
+*.zip

@@ -174,8 +174,6 @@ class _RefinementPageState extends State<RefinementPage> {
         children: [
           const Icon(Icons.cleaning_services, size: 14, color: Colors.orange),
           const SizedBox(width: 8),
-          const Text("Watermark:", style: TextStyle(fontSize: 11, color: Colors.grey)),
-          const SizedBox(width: 4),
           Theme(
             data: Theme.of(context).copyWith(
               hoverColor: Colors.transparent,
@@ -453,7 +451,7 @@ class _RefinementPageState extends State<RefinementPage> {
 
                           final double fontSize = _calculateFittingFontSize();
                           final double rawH = rect[3] * ch;
-                          final double uiHeight = (node.containsKey('fittingH') ? (node['fittingH'] as double) : rect[3]) * ch;
+                          final double uiHeight = ((node.containsKey('fittingH') ? (node['fittingH'] as double) : rect[3]) * ch) * 1.2;
                           final double hDiff = uiHeight - rawH;
 
                           final double uiLeft = rect[0] * cw;
@@ -491,26 +489,26 @@ class _RefinementPageState extends State<RefinementPage> {
                                         : (isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent),
                                     borderRadius: BorderRadius.circular(2),
                                   ),
-                                  child: Center(
-                                    child: TextField(
-                                      controller: controller,
-                                      maxLines: 1,
-                                      expands: false,
-                                      textAlign: TextAlign.center,
-                                      textAlignVertical: TextAlignVertical.center,
-                                      style: TextStyle(
-                                        fontSize: fontSize, 
-                                        color: textColor.withValues(alpha: isFocused ? 1.0 : 0.9), 
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none, 
-                                        contentPadding: EdgeInsets.zero, 
-                                        isDense: true,
-                                      ),
-                                      onChanged: (val) => _currentPage.nodes[idx]['text'] = val,
-                                      onTap: () => setState(() => _focusedIndex = idx),
+                                  child: TextField(
+                                    controller: controller,
+                                    maxLines: 1,
+                                    expands: false,
+                                    textAlign: TextAlign.center,
+                                    textAlignVertical: TextAlignVertical.center,
+                                    style: TextStyle(
+                                      fontSize: fontSize, 
+                                      color: textColor.withValues(alpha: isFocused ? 1.0 : 0.9), 
+                                      fontWeight: FontWeight.w600,
                                     ),
+                                    decoration: InputDecoration(
+                                      border: InputBorder.none, 
+                                      contentPadding: EdgeInsets.only(
+                                        bottom: ((uiHeight - fontSize) / 2).clamp(0.0, uiHeight),
+                                      ), 
+                                      isDense: true,
+                                    ),
+                                    onChanged: (val) => _currentPage.nodes[idx]['text'] = val,
+                                    onTap: () => setState(() => _focusedIndex = idx),
                                   ),
                               ),
                             ),
