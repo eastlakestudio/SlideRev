@@ -8,6 +8,8 @@ import '../core/pdf_generator.dart';
 import '../core/vision_ocr_adapter.dart';
 import '../core/lama_inpainting_engine.dart';
 import '../core/logger.dart';
+import '../core/subscription_service.dart';
+import 'paywall_dialog.dart';
 
 class ProcessedPage {
   final Uint8List originalImage;
@@ -561,6 +563,11 @@ class _RefinementPageState extends State<RefinementPage> {
   }
 
   Future<void> _exportPptx() async {
+    if (!SubscriptionService().hasProAccess) {
+      PaywallDialog.show(context);
+      return;
+    }
+
     final originalName = p.basenameWithoutExtension(widget.pdfPath);
     final defaultName = "$originalName.pptx";
     String? outputPath = await FilePicker.saveFile(dialogTitle: 'Save PPTX', fileName: defaultName, type: FileType.custom, allowedExtensions: ['pptx']);
@@ -579,6 +586,11 @@ class _RefinementPageState extends State<RefinementPage> {
   }
 
   Future<void> _exportPdf() async {
+    if (!SubscriptionService().hasProAccess) {
+      PaywallDialog.show(context);
+      return;
+    }
+
     final originalName = p.basenameWithoutExtension(widget.pdfPath);
     final defaultName = "${originalName}_Refined.pdf";
     String? outputPath = await FilePicker.saveFile(dialogTitle: 'Save PDF', fileName: defaultName, type: FileType.custom, allowedExtensions: ['pdf']);

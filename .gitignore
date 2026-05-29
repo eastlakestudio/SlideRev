@@ -45,3 +45,7 @@ appstore/*.png
 test_corrupted.pptx
 
 *.zip
+
+# Mac Apps and Installers
+*.app/
+*.pkg

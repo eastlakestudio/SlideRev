@@ -10,13 +10,15 @@ let package = Package(
         .executable(name: "SlideRev", targets: ["SlideRev"])
     ],
     dependencies: [
-        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.19")
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.19"),
+        .package(url: "https://github.com/RevenueCat/purchases-ios.git", from: "5.0.0")
     ],
     targets: [
         .executableTarget(
             name: "SlideRev",
             dependencies: [
-                "ZIPFoundation"
+                "ZIPFoundation",
+                .product(name: "RevenueCat", package: "purchases-ios")
             ],
             path: "Sources/SlideRev"
         ),

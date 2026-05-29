@@ -8,6 +8,8 @@ struct RefinementView: View {
     @AppStorage("SlideRev.ExportCount") private var exportCount: Int = 0
     
     @StateObject var processor = AdvancedSlideProcessor()
+    @ObservedObject var subManager = SubscriptionManager.shared
+    @State private var showSubscriptionSheet = false
     @State private var zoomScale: CGFloat = 0.8
     @State private var selectedItemId: UUID?
     
@@ -163,6 +165,9 @@ struct RefinementView: View {
             if processor.originalImage != nil {
                 withAnimation { autoFit() }
             }
+        }
+        .sheet(isPresented: $showSubscriptionSheet) {
+            SubscriptionView()
         }
     }
     
@@ -861,6 +866,26 @@ struct RefinementView: View {
                         .background(LinearGradient(colors: [.orange, .red], startPoint: .top, endPoint: .bottom))
                         .cornerRadius(8)
                 }.buttonStyle(.plain).help("Export to Editable PPTX")
+
+                if !subManager.hasFullAccess {
+                    Divider().frame(height: 24).padding(.horizontal, 4)
+                    
+                    Button(action: { showSubscriptionSheet = true }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Premium")
+                                .font(.subheadline).bold()
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 32)
+                        .background(LinearGradient(colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Subscribe to yearly plan to unlock PPTX export")
+                }
             }
         }
         .padding(.horizontal, 16).padding(.leading, 12).frame(height: 60).background(Color(NSColor.windowBackgroundColor)).shadow(color: .black.opacity(0.05), radius: 1, y: 1)
@@ -873,7 +898,7 @@ struct RefinementView: View {
             } else if isEraserMode {
                 Label("Eraser Tool Active: Wipe out background content", systemImage: "eraser.fill").foregroundColor(.accentColor)
             } else {
-                Label("SlideRev v0.9.6.21 Ready", systemImage: "checkmark.circle.fill").foregroundColor(.secondary)
+                Label("SlideRev v\(subManager.currentAppVersion) Ready", systemImage: "checkmark.circle.fill").foregroundColor(.secondary)
             }
             
             Spacer()
@@ -1131,6 +1156,10 @@ struct RefinementView: View {
     private func nextPage() { if currentPageIndex < totalPageCount - 1 { loadPage(at: currentPageIndex + 1) } }
 
     private func exportToPPTX() {
+        guard subManager.hasFullAccess else {
+            showSubscriptionSheet = true
+            return
+        }
         guard let sourcePath = originalPath else { return }
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.presentation]

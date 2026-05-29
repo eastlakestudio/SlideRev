@@ -11,8 +11,10 @@ import 'core/pdf_engine.dart';
 import 'core/model_manager.dart';
 import 'core/logger.dart';
 import 'pages/refinement_page.dart';
-
-void main() {
+import 'core/subscription_service.dart';
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SubscriptionService().init();
   runApp(const SlideRevWindowsApp());
 }
 
@@ -251,7 +253,9 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(),
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
+            _buildProBadge(),
+            const SizedBox(height: 20),
           MouseRegion(
             onEnter: (_) => setState(() => _isHoveringDashboard = true),
             onExit: (_) => setState(() => _isHoveringDashboard = false),
@@ -323,6 +327,48 @@ class _MainDesktopWindowState extends State<MainDesktopWindow> {
         const SizedBox(height: 12),
         Text("Professional AI Slide Reconstructor", style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.primary)),
       ],
+    );
+  }
+
+  Widget _buildProBadge() {
+    return ListenableBuilder(
+      listenable: SubscriptionService(),
+      builder: (context, _) {
+        final service = SubscriptionService();
+        final isSub = service.isSubscribed;
+        final isTrial = service.isTrialActive && !isSub;
+        
+        String badgeText;
+        Color badgeColor;
+        
+        if (isSub) {
+          badgeText = "PRO ACTIVATED";
+          badgeColor = Colors.amber;
+        } else if (isTrial) {
+          badgeText = "FREE TRIAL (${service.trialDaysRemaining} DAYS LEFT)";
+          badgeColor = Colors.green;
+        } else {
+          badgeText = "FREE VERSION";
+          badgeColor = Colors.grey;
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: badgeColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            badgeText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: badgeColor,
+            ),
+          ),
+        );
+      },
     );
   }
 

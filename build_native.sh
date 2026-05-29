@@ -6,7 +6,7 @@ set -e
 APP_NAME="SlideRev"
 BUNDLE_NAME="AI Slide Editor"
 BUNDLE_ID="com.eastlakestudio.sliderev"
-VERSION="1.0.1"
+VERSION="2.0.0"
 BUILD_DIR="build_app"
 DIST_DIR="dist"
 APP_BUNDLE="${DIST_DIR}/${BUNDLE_NAME}.app"
