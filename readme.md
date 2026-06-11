@@ -1,57 +1,99 @@
-# 🎯 SlideRev: PDF 到可编辑 PPTX 的原生逆向引擎
+# SlideRev: Native PDF to Editable PPTX Reverse Engine / PDF 到可编辑 PPTX 的原生逆向引擎
 
-SlideRev 是一款专为 macOS 设计的原生应用程序，旨在将包含幻灯片的 PDF 文件逆向转换为“背景干净、文字可编辑”的高质量 PPTX 和 PDF 文件。
+[English](#-english-version) | [中文版](#-中文版)
 
-## 📖 项目背景
+---
 
+## 🇺🇸 English Version
+
+### 🎯 Goal
+**SlideRev** is a native macOS application designed to reverse-engineer flat PDF presentations into high-quality, fully editable `.pptx` and `.pdf` documents with clean backgrounds and standalone text layers.
+
+### 📖 Background
+In academic and business scenarios, we often only have access to exported PDF slides rather than the source files. With the rise of AI tools (like NotebookLM), generated outputs are frequently flat images. Due to current LLM limitations, they may contain typos or alignment glitches that prevent them from being used directly in formal presentations.
+
+SlideRev fills this gap. Leveraging Apple's native Vision framework, CoreML, and low-level OOXML manipulation, SlideRev reconstructs document layers without depending on Microsoft Office. This lets users proofread, refine, and edit AI-generated slides and export them to editable formats.
+
+The project is highly optimized for memory consumption (fully compatible with 8GB RAM devices) and strictly compliant with the Apple App Sandbox requirements.
+
+### ✨ Core Features
+- **Smart Text Recognition (Vision OCR)**: Uses Apple's `Vision` framework to extract text with high precision along with its coordinate system, font size, and color. By recording "original size, position, and color", it replaces baked-in image text with crisp editable text layers.
+- **AI Background Reconstruction (LaMa Inpainting)**: Embedded with a mobile-optimized `LaMa` neural network model to erase text from complex slide backgrounds. It reconstructs missing textures to ensure a natural look after text removal.
+- **Dual Format Export**: Supports exporting to industry-standard `.pptx` presentations and high-fidelity editable `.pdf` documents. Both text layers and inpainted backgrounds are preserved.
+- **100% Offline Processing**: All OCR, neural inference, and package creation run locally on your Mac. No documents are uploaded to the cloud, ensuring total privacy.
+
+### 🛠️ Technical Architecture
+SlideRev is built purely in Swift, utilizing low-level capabilities of the Apple ecosystem:
+- **UI Framework**: SwiftUI (macOS 14+)
+- **Image Processing**: Vision, CoreImage, CoreGraphics, PDFKit
+- **Neural Network**: CoreML (LaMa inference model)
+- **Dependency Management**: Swift Package Manager (SPM)
+- **Archive IO**: `ZIPFoundation` (handling OOXML containers)
+
+### 🚀 Developer Quick Start
+
+#### 1. Prepare the ML Model
+Since the ML model is too large, it is not bundled in the repository. Run the following script before the first launch to download and compile the LaMa model:
+```bash
+./prepare_lama_model.sh
+```
+
+#### 2. Local Native Compilation
+The project supports Universal architectures (arm64/x86_64). Build a local copy with:
+```bash
+./build_native.sh
+```
+
+#### 3. Prepare for App Store Distribution (Sandbox Package)
+To sign and package the app for Mac App Store review:
+```bash
+./appstore_package.sh
+```
+
+---
+
+## 🇨🇳 中文版
+
+### 🎯 目标
+**SlideRev** 是一款专为 macOS 设计的原生应用程序，旨在将包含幻灯片的 PDF 文件逆向转换为“背景干净、文字可编辑”的高质量 PPTX 和 PDF 文件。
+
+### 📖 项目背景
 在办公与学术场景中，我们经常只有导出的 PDF 版幻灯片，而缺少原始的编辑文件。特别是随着近年来 AI 技术（如 NotebookLM 等）的爆发式发展，AI 能够快速输出高质量内容的 Slide 或信息图，但其产物通常为纯图片格式；且受限于当前大模型的局限性，内容中时而会出现错别字或微小的排版偏差，无法直接投用于严谨的商业或正式工作场合。
 
 因此，SlideRev 填补了这一空白：它利用苹果原生的视觉识别（Vision）、CoreML 神经网络技术以及底层的 OOXML 操控机制，在不依赖微软 Office 的情况下实现原生级别的文档还原，让用户能够对 AI 生成或遗失源码的幻灯片进行二次精修与专业校对，并导出为可自由编辑的 PPTX 或 PDF 格式。
 
 该项目特别针对内存优化（兼容 8GB 内存设备）和苹果严苛的 App Sandbox 沙盒机制进行了深度适配。
 
-## ✨ 核心功能
-
+### ✨ 核心功能
 - **智能文本识别 (Vision OCR)**：利用 `Vision` 框架高精度提取文字内容，并精准获取其位置坐标、字体大小与颜色信息。通过“原位、原色、原大小记录”技术，将原来模糊的图像文字替换为清晰的可编辑文本，实现视觉上的无缝衔接。
-
 - **AI 高保真背景重绘 (LaMa Inpainting)**：内置移动端优化的 `LaMa` 神经网络模型，专门用于复杂背景下的文字擦除。该技术能实现背景的高度还原与纹理补全，确保在移除原文的同时，底层背景依然自然真实。
-
 - **双重可编辑格式导出**：支持导出为符合工业标准的 `.pptx` 演示文稿及高保真的可编辑 `.pdf` 文档。导出的文件保留了识别出的文字层与重绘后的背景，方便在各种办公软件中进行二次创作。
-
 - **100% 本地处理**：所有识别、重绘与封装过程均在本地设备运行，不上传任何用户原始文档到云端，保护隐私且离线可用。
 
-## 🛠️ 技术架构
-
+### 🛠️ 技术架构
 项目采用纯 Swift 构建，充分利用了 Apple 生态的底层能力：
-
 - **UI 框架**：SwiftUI (macOS 14+)
 - **图像处理**：Vision, CoreImage, CoreGraphics, PDFKit
 - **神经网络**：CoreML (LaMa 模型推理)
 - **依赖管理**：Swift Package Manager (SPM)
 - **底层 IO**：`ZIPFoundation` (处理 OOXML 容器)
 
-## 🚀 开发者快速启动
+### 🚀 开发者快速启动
 
-### 1. 准备 ML 模型
-
+#### 1. 准备 ML 模型
 由于 ML 模型体积较大，本项目不直接在仓库中包含编译后的模型。请在首次运行前执行如下脚本，它会自动下载并转换 LaMa 模型：
-
 ```bash
 ./prepare_lama_model.sh
 ```
 
-### 2. 本地原生编译
-
+#### 2. 本地原生编译
 项目支持 Universal 二进制构架（arm64/x86_64 共存），可以通过终端脚本一键打包：
-
 ```bash
 ./build_native.sh
 ```
 
-### 3. 上架打包 (备用)
-
+#### 3. 上架打包 (备用)
 若需准备提交至 Mac App Store 的发行包，可使用：
-
 ```bash
 ./appstore_package.sh
 ```

@@ -24,4 +24,11 @@ final class SubscriptionManagerTests: XCTestCase {
         XCTAssertFalse(manager.isVersionLegacy("66"))
         XCTAssertFalse(manager.isVersionLegacy("100"))
     }
+    
+    @MainActor
+    func testInitialPackageLoadingState() {
+        let manager = SubscriptionManager.shared
+        XCTAssertNil(manager.yearlyPackage)
+        XCTAssertFalse(manager.isLoadingPackage)
+    }
 }

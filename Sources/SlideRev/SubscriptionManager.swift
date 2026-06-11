@@ -9,6 +9,8 @@ public class SubscriptionManager: ObservableObject {
     @Published public var isSubscribed: Bool = false
     @Published public var originalAppVersion: String? = nil
     @Published public var hasFullAccess: Bool = true
+    @Published public var yearlyPackage: Package? = nil
+    @Published public var isLoadingPackage: Bool = false
     
     public let legacyThresholdVersion = "1.0.1"
     public let legacyThresholdBuild = 65
@@ -30,9 +32,10 @@ public class SubscriptionManager: ObservableObject {
         // Initialize RevenueCat with production Public API Key
         Purchases.configure(withAPIKey: "appl_udTmDvmHDxPBlyuEOUIPefjKdrG")
         
-        // Fetch initial subscription status
+        // Fetch initial subscription status and load package details
         Task {
             await checkSubscriptionStatus()
+            await loadYearlyPackage()
         }
     }
     
@@ -47,11 +50,22 @@ public class SubscriptionManager: ObservableObject {
         updateAccessStatus()
     }
     
+    public func loadYearlyPackage() async {
+        isLoadingPackage = true
+        defer { isLoadingPackage = false }
+        do {
+            let offerings = try await Purchases.shared.offerings()
+            // Check both specified offering ID and fallback to active current offering
+            self.yearlyPackage = offerings["ai_slide_editor"]?.annual ?? offerings.current?.annual
+        } catch {
+            print("⚠️ [SubscriptionManager] Failed to load offerings: \(error.localizedDescription)")
+        }
+    }
+    
     public func purchaseYearlySubscription() async throws -> Bool {
         let offerings = try await Purchases.shared.offerings()
-        // Strictly use 'ai_slide_editor' offering for this app
-        guard let package = offerings["ai_slide_editor"]?.annual else {
-            throw NSError(domain: "SubscriptionManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Annual subscription package not found in 'ai_slide_editor' offering."])
+        guard let package = offerings["ai_slide_editor"]?.annual ?? offerings.current?.annual else {
+            throw NSError(domain: "SubscriptionManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Annual subscription package not found in offerings."])
         }
         
         let result = try await Purchases.shared.purchase(package: package)

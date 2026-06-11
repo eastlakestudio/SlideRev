@@ -8,7 +8,7 @@ struct SubscriptionView: View {
     @State private var message: String? = nil
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 18) {
             HStack {
                 Spacer()
                 Button(action: { dismiss() }) {
@@ -23,12 +23,12 @@ struct SubscriptionView: View {
             
             VStack(spacing: 12) {
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 60))
+                    .font(.system(size: 54))
                     .foregroundStyle(LinearGradient(colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom))
-                    .shadow(color: .orange.opacity(0.3), radius: 10)
+                    .shadow(color: .orange.opacity(0.3), radius: 8)
                 
                 Text("Unlock SlideRev Premium")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
                 
                 Text("Convert flat PDFs, images, and citations into fully editable PPTX presentations.")
                     .font(.subheadline)
@@ -37,25 +37,48 @@ struct SubscriptionView: View {
                     .frame(maxWidth: 420)
             }
             
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Subscription Card
-                VStack(spacing: 8) {
-                    Text("Yearly Premium Membership")
-                        .font(.headline)
-                    Text("Auto-renewable. Cancel anytime.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Standard EULA applies")
-                        .font(.system(size: 11))
-                        .foregroundColor(.accentColor)
+                VStack(spacing: 12) {
+                    if subManager.isLoadingPackage {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.vertical, 8)
+                    } else if let package = subManager.yearlyPackage {
+                        VStack(spacing: 6) {
+                            Text(package.storeProduct.localizedTitle)
+                                .font(.headline)
+                            
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text(package.storeProduct.localizedPriceString)
+                                    .font(.system(size: 24, weight: .bold))
+                                Text("/ year")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Text(package.storeProduct.localizedDescription)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                    } else {
+                        VStack(spacing: 4) {
+                            Text("Yearly Premium Membership")
+                                .font(.headline)
+                            Text("Auto-renewable. Cancel anytime.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
-                .padding()
+                .padding(.vertical, 14)
                 .frame(maxWidth: .infinity)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.accentColor, lineWidth: 2)
-                        .background(Color.accentColor.opacity(0.05))
+                        .stroke(Color.accentColor.opacity(0.4), lineWidth: 1.5)
+                        .background(Color.accentColor.opacity(0.04))
                 )
                 
                 if let msg = message {
@@ -72,7 +95,7 @@ struct SubscriptionView: View {
                             .tint(.white)
                             .frame(height: 20)
                     } else {
-                        Text("Subscribe Yearly")
+                        Text(subManager.yearlyPackage.map { "Subscribe Yearly - \($0.storeProduct.localizedPriceString)" } ?? "Subscribe Yearly")
                             .font(.headline)
                     }
                 }
@@ -92,6 +115,20 @@ struct SubscriptionView: View {
             }
             .padding(.horizontal, 32)
             
+            // Standard Auto-Renewable Subscription Legal Terms
+            VStack(spacing: 4) {
+                Text("Subscription Terms:")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.secondary)
+                Text("Payment will be charged to your Apple ID account at confirmation of purchase. Subscription automatically renews unless it is canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions in your App Store Account Settings after purchase.")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
+                    .frame(maxWidth: 420)
+            }
+            .padding(.horizontal, 24)
+            
             Spacer()
             
             // EULA & Privacy Policy Footer
@@ -106,7 +143,7 @@ struct SubscriptionView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
+                Link(destination: URL(string: "https://eastlakestudio.github.io/sliderev/privacy.html")!) {
                     Text("Privacy Policy")
                         .font(.caption)
                         .underline()
@@ -114,8 +151,11 @@ struct SubscriptionView: View {
             }
             .padding(.bottom, 24)
         }
-        .frame(width: 500, height: 550)
+        .frame(width: 500, height: 600)
         .background(Color(NSColor.windowBackgroundColor))
+        .task {
+            await subManager.loadYearlyPackage()
+        }
         .onAppear {
             Purchases.shared.trackCustomPaywallImpression(CustomPaywallImpressionParams(paywallId: "ai_slide_editor_paywall"))
         }

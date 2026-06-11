@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:pdfx/pdfx.dart';
 
 class PdfEngine {
@@ -13,7 +12,10 @@ class PdfEngine {
   }
 
   /// 加载并渲染 PDF 文件的某一页为图片
-  Future<PdfPageImage?> renderPageToImage(String pdfPath, int pageNumber) async {
+  Future<PdfPageImage?> renderPageToImage(
+    String pdfPath,
+    int pageNumber,
+  ) async {
     // 使用 File 方式读取字节流，绕过 native 层的路径编码问题
     final bytes = await File(pdfPath).readAsBytes();
     final document = await PdfDocument.openData(bytes);

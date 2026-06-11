@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - AI Slide Editor (SlideRev)</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background: #090d16;
+                --surface: #131b2e;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --border: #1e293b;
+                --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+                --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            line-height: 1.7;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--primary-gradient);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-area {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: var(--primary-gradient);
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 8px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .divider {
+            height: 1px;
+            background-color: var(--border);
+            margin: 32px 0;
+        }
+
+        section {
+            margin-bottom: 32px;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 18px;
+            border-radius: 2px;
+            background: var(--primary-gradient);
+        }
+
+        p {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        ul {
+            list-style-position: inside;
+            margin-left: 8px;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        li {
+            margin-bottom: 12px;
+            padding-left: 8px;
+        }
+
+        .highlight-box {
+            background-color: rgba(79, 70, 229, 0.05);
+            border-left: 4px solid var(--primary);
+            border-radius: 0 12px 12px 0;
+            padding: 18px 20px;
+            margin-bottom: 24px;
+        }
+
+        .highlight-box p {
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: opacity 0.2s ease;
+        }
+
+        a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-area">SR</div>
+            <h1>Privacy Policy</h1>
+            <div class="subtitle">Last Updated: June 11, 2026</div>
+        </header>
+
+        <div class="divider"></div>
+
+        <section>
+            <div class="highlight-box">
+                <p>💡 Core Principle: AI Slide Editor (SlideRev) runs 100% locally. Your PDF files, PowerPoint presentations, and images are processed entirely on your Mac and are never uploaded to any server.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>1. Introduction</h2>
+            <p>Thank you for choosing AI Slide Editor (SlideRev). We respect your privacy and are committed to protecting it. This Privacy Policy explains how we handle your data. We do not collect, store, or share your documents or private files.</p>
+        </section>
+
+        <section>
+            <h2>2. Data Collection and Processing</h2>
+            <p>The core features of the application, including LaMa Background Inpainting and Vision OCR Text Recognition, run entirely using local machine learning models and system framework libraries on your device.</p>
+            <ul>
+                <li><strong>Local-Only Processing</strong>: Any PDF slides, generated PPTX presentations, or temporary images you import are kept strictly within your local app sandbox. They are never transmitted online or stored outside your device.</li>
+                <li><strong>No Personal Identification</strong>: The app does not require users to register an account. We do not collect personal identifiers such as names, email addresses, or phone numbers.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>3. Subscriptions and Payments</h2>
+            <p>Our application offers an auto-renewable yearly premium subscription to unlock full features.</p>
+            <ul>
+                <li>All purchase transactions and payment details are handled securely by Apple's official App Store system.</li>
+                <li>We use <strong>RevenueCat</strong> to manage and verify subscription receipt validation. RevenueCat only processes anonymous transaction IDs and receipt identifiers. We do not have access to your credit card details, real name, or Apple ID account credentials.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>4. Links to Third-Party Services</h2>
+            <p>The app contains functional links to Apple's Standard End User License Agreement (EULA) and this Privacy Policy. Clicking these links will open them in your default web browser. Please refer to their respective terms.</p>
+        </section>
+
+        <section>
+            <h2>5. Changes to This Policy</h2>
+            <p>We may update our Privacy Policy from time to time. Any changes will be posted on this page with an updated "Last Updated" date at the top.</p>
+        </section>
+
+        <section>
+            <h2>6. Contact Us</h2>
+            <p>If you have any questions or feedback regarding this Privacy Policy, feel free to contact us at:</p>
+            <p><a href="mailto:mingh.liu@gmail.com">mingh.liu@gmail.com</a></p>
+        </section>
+
+        <div class="divider"></div>
+
+        <footer>
+            <p>&copy; 2026 EastlakeStudio. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

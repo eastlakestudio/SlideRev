@@ -54,8 +54,12 @@ class LamaInpaintingEngine {
         'mask': maskBytes,
       });
 
-      outputs.forEach((v) => v?.release());
-      inputs.values.forEach((v) => v.release());
+      for (var v in outputs) {
+        v?.release();
+      }
+      for (var v in inputs.values) {
+        v.release();
+      }
       
       return result;
     } catch (e) {

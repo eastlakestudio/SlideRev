@@ -61,10 +61,8 @@ class PptxGenerator {
 
     final zipEncoder = ZipEncoder();
     final zipBytes = zipEncoder.encode(archive);
-    if (zipBytes != null) {
-      await File(outputPath).writeAsBytes(zipBytes);
+    await File(outputPath).writeAsBytes(zipBytes);
     }
-  }
 
   String _getSlideXml(PptxPageData page, double canvasW, double canvasH) {
     // 🚀 全比例对齐，消除裁剪偏移
@@ -72,10 +70,10 @@ class PptxGenerator {
     final offX = 0.0;
     final offY = 0.0;
 
-    final offX_EMU = 0;
-    final offY_EMU = 0;
-    final extX_EMU = (canvasW * EMU_PER_PT).toInt();
-    final extY_EMU = (canvasH * EMU_PER_PT).toInt();
+    final offxEmu = 0;
+    final offyEmu = 0;
+    final extxEmu = (canvasW * EMU_PER_PT).toInt();
+    final extyEmu = (canvasH * EMU_PER_PT).toInt();
 
     final builder = XmlBuilder();
     builder.processing('xml', 'version="1.0" encoding="UTF-8" standalone="yes"');
@@ -110,8 +108,8 @@ class PptxGenerator {
             });
             builder.element('p:spPr', nest: () {
               builder.element('a:xfrm', nest: () {
-                builder.element('a:off', nest: () { builder.attribute('x', offX_EMU); builder.attribute('y', offY_EMU); });
-                builder.element('a:ext', nest: () { builder.attribute('cx', extX_EMU); builder.attribute('cy', extY_EMU); });
+                builder.element('a:off', nest: () { builder.attribute('x', offxEmu); builder.attribute('y', offyEmu); });
+                builder.element('a:ext', nest: () { builder.attribute('cx', extxEmu); builder.attribute('cy', extyEmu); });
               });
               builder.element('a:prstGeom', nest: () { builder.attribute('prst', 'rect'); builder.element('a:avLst', nest: () {}); });
             });

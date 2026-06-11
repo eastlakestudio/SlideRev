@@ -5,7 +5,11 @@ import 'package:pdf/widgets.dart' as pw;
 
 class PdfGenerator {
   /// 将处理后的图片和文本导出为 PDF
-  Future<void> createPdf(String outputPath, Uint8List imageBytes, List<Map<String, dynamic>> nodes) async {
+  Future<void> createPdf(
+    String outputPath,
+    Uint8List imageBytes,
+    List<Map<String, dynamic>> nodes,
+  ) async {
     final pdf = pw.Document();
     final image = pw.MemoryImage(imageBytes);
 
@@ -27,7 +31,7 @@ class PdfGenerator {
                     child: pw.Text(node['text']),
                   ),
                 );
-              }).toList(),
+              }),
             ],
           );
         },
