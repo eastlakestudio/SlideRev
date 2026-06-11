@@ -143,7 +143,7 @@ struct SubscriptionView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Link(destination: URL(string: "https://eastlakestudio.github.io/sliderev/privacy.html")!) {
+                Link(destination: URL(string: "https://eastlakestudio.github.io/SlideRev/privacy.html")!) {
                     Text("Privacy Policy")
                         .font(.caption)
                         .underline()
